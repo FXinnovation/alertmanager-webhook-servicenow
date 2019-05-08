@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/prometheus/alertmanager/template"
@@ -11,6 +9,8 @@ import (
 	"github.com/prometheus/common/version"
 
 	"gopkg.in/alecthomas/kingpin.v2"
+
+	"github.com/prometheus/common/log"
 )
 
 var (
@@ -36,9 +36,9 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Do stuff here
-	log.Printf("Alerts: Status=%s, GroupLabels=%v, CommonLabels=%v", data.Status, data.GroupLabels, data.CommonLabels)
+	log.Infof("Alerts: Status=%s, GroupLabels=%v, CommonLabels=%v", data.Status, data.GroupLabels, data.CommonLabels)
 	for _, alert := range data.Alerts {
-		log.Printf("Alert: status=%s,Labels=%v,Annotations=%v", alert.Status, alert.Labels, alert.Annotations)
+		log.Infof("Alert: status=%s,Labels=%v,Annotations=%v", alert.Status, alert.Labels, alert.Annotations)
 	}
 
 	// Returns a 200 if everything went smoothly
@@ -49,17 +49,17 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 // - first one to give a status on the receiver itself
 // - second one to actually process the data
 func main() {
-	kingpin.Version(version.Print("my_webhook"))
+	kingpin.Version(version.Print("alertmanager-webhook-servicenow"))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
-	log.Println("Starting webhook", version.Info())
-	log.Println("Build context", version.BuildContext())
+	log.Info("Starting webhook", version.Info())
+	log.Info("Build context", version.BuildContext())
 
 	http.HandleFunc("/webhook", webhook)
 	http.Handle("/metrics", promhttp.Handler())
 
-	log.Printf("listening on: %v", *listenAddress)
+	log.Infof("listening on: %v", *listenAddress)
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))
 }
 
@@ -74,6 +74,6 @@ func sendJSONResponse(w http.ResponseWriter, status int, message string) {
 	_, err := w.Write(bytes)
 
 	if err != nil {
-		log.Println(fmt.Errorf("Error writing JSON response: %s", err))
+		log.Errorf("Error writing JSON response: %s", err)
 	}
 }
