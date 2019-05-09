@@ -33,8 +33,7 @@ type Incident struct {
 type ServiceNowClient struct {
 	baseURL    string
 	authHeader string
-
-	client *http.Client
+	client     *http.Client
 }
 
 // NewServiceNowClient will create a new ServiceNow client
@@ -83,7 +82,6 @@ func (snClient *ServiceNowClient) create(table string, body []byte) (string, err
 		return "", err
 	}
 
-	fmt.Printf("responseBody: %s", string(responseBody))
 	return string(responseBody), nil
 }
 
