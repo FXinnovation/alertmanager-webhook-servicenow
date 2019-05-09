@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -30,30 +31,41 @@ type Incident struct {
 
 // ServiceNowClient is the interface to a ServiceNow instance
 type ServiceNowClient struct {
-	instanceName string
-	baseURL      string
-	authHeader   string
+	baseURL    string
+	authHeader string
 
 	client *http.Client
 }
 
 // NewServiceNowClient will create a new ServiceNow client
-func NewServiceNowClient(instanceName string, userName string, password string) *ServiceNowClient {
-	return &ServiceNowClient{
-		instanceName: instanceName,
-		baseURL:      fmt.Sprintf(serviceNowBaseURL, instanceName),
-		authHeader:   fmt.Sprintf("Basic %s", base64.URLEncoding.EncodeToString([]byte(userName+":"+password))),
-		client:       http.DefaultClient,
+func NewServiceNowClient(instanceName string, userName string, password string) (*ServiceNowClient, error) {
+	if instanceName == "" {
+		return nil, errors.New("Missing instanceName")
 	}
+
+	if userName == "" {
+		return nil, errors.New("Missing userName")
+	}
+
+	if password == "" {
+		return nil, errors.New("Missing password")
+	}
+
+	return &ServiceNowClient{
+		baseURL:    fmt.Sprintf(serviceNowBaseURL, instanceName),
+		authHeader: fmt.Sprintf("Basic %s", base64.URLEncoding.EncodeToString([]byte(userName+":"+password))),
+		client:     http.DefaultClient,
+	}, nil
 }
 
-//Create a table item in ServiceNow from a post body
+// Create a table item in ServiceNow from a post body
 func (snClient *ServiceNowClient) create(table string, body []byte) (string, error) {
 	log.Infof("Creating a ServiceNow %s", table)
 	url := fmt.Sprintf("%s/api/now/table/%s", snClient.baseURL, table)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		log.Errorf("Error creating the request. %s", err)
+		return "", err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -73,4 +85,21 @@ func (snClient *ServiceNowClient) create(table string, body []byte) (string, err
 
 	fmt.Printf("responseBody: %s", string(responseBody))
 	return string(responseBody), nil
+}
+
+// CreateIncident will create an incident in ServiceNow from an Incident
+func (snClient *ServiceNowClient) CreateIncident(incident Incident) (string, error) {
+	postBody, err := json.Marshal(incident)
+	if err != nil {
+		log.Errorf("Error while marshalling the incident. %s", err)
+		return "", err
+	}
+
+	response, err := snClient.create("incident", postBody)
+	if err != nil {
+		log.Errorf("Error while creating the incident. %s", err)
+		return "", err
+	}
+
+	return response, nil
 }
