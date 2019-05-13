@@ -1,4 +1,5 @@
 alertmanager-webhook-servicenow
+config/servicenow.yml
 
 # Binaries for programs and plugins
 *.exe

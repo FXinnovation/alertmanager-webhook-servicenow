@@ -1,0 +1,4 @@
+service_now:
+  instance_name: "<instance name>"
+  user_name: "<user>"
+  password: "<password>"
