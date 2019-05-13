@@ -60,7 +60,7 @@ func NewServiceNowClient(instanceName string, userName string, password string) 
 // Create a table item in ServiceNow from a post body
 func (snClient *ServiceNowClient) create(table string, body []byte) (string, error) {
 	log.Infof("Creating a ServiceNow %s", table)
-	url := fmt.Sprintf("%s/api/now/table/%s", snClient.baseURL, table)
+	url := fmt.Sprintf(tableAPI, snClient.baseURL, table)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		log.Errorf("Error creating the request. %s", err)
