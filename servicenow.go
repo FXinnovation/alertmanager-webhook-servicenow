@@ -14,7 +14,7 @@ import (
 
 const (
 	serviceNowBaseURL = "https://%s.service-now.com"
-	tableAPI          = "%s/api/now/table/%s"
+	tableAPI          = "%s/api/now/v2/table/%s"
 )
 
 // Incident is a model of the ServiceNow incident table
