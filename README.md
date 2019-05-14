@@ -26,8 +26,8 @@ This webhook expects a JSON object from Alertmanager. The format of this JSON is
 To quickly test if the webhook is working you can run:
 
 ```bash
-$ curl -H "Content-type: application/json" -X POST \
-  -d '{"receiver": "servicenow-receiver-1", "status": "firing", "alerts": [{"status": "firing", "labels": {"alertname": "TestAlert", "key": "value"} }], "groupLabels": {"alertname": "TestAlert"}}' \
+curl -H "Content-type: application/json" -X POST \
+  -d '{"receiver": "servicenow-receiver-1", "status": "firing", "alerts": [{"status": "firing", "labels": {"alertname": "TestAlert"}, "annotations":{"summary": "My ticket summary", "description": "My ticket description"} }], "groupLabels": {"alertname": "TestAlert"}}' \
   http://localhost:9877/webhook
 ```
 

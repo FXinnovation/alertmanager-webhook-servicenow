@@ -19,7 +19,7 @@ var (
 	configFile    = kingpin.Flag("config.file", "ServiceNow configuration file.").Default("config/servicenow.yml").String()
 	listenAddress = kingpin.Flag("web.listen-address", "The address to listen on for HTTP requests.").Default(":9877").String()
 	config        Config
-	snClient      *ServiceNowClient
+	serviceNow    ServiceNow
 )
 
 // JSONResponse is the Webhook http response
@@ -37,7 +37,7 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = snClient.ManageIncidents(data, config)
+	err = manageIncidents(data, config)
 
 	if err != nil {
 		log.Errorf("Error managing incident from alert : %v", err)
@@ -68,16 +68,6 @@ func main() {
 
 	log.Infof("listening on: %v", *listenAddress)
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))
-}
-
-func createSnClient(config Config) *ServiceNowClient {
-	var err error
-	snClient, err = NewServiceNowClient(config.ServiceNow.InstanceName, config.ServiceNow.UserName, config.ServiceNow.Password)
-	if err != nil {
-		log.Fatalf("Error creating the ServiceNow client: %v", err)
-	}
-	log.Infof("ServiceNow config loaded, using %s", snClient.baseURL)
-	return snClient
 }
 
 func sendJSONResponse(w http.ResponseWriter, status int, message string) {
@@ -122,4 +112,45 @@ func loadConfig(configFile string) Config {
 	}
 
 	return config
+}
+
+func createSnClient(config Config) ServiceNow {
+	var err error
+	serviceNow, err = NewServiceNowClient(config.ServiceNow.InstanceName, config.ServiceNow.UserName, config.ServiceNow.Password)
+	if err != nil {
+		log.Fatalf("Error creating the ServiceNow client: %v", err)
+	}
+	log.Info("ServiceNow config loaded")
+	return serviceNow
+}
+
+func manageIncidents(data template.Data, config Config) error {
+
+	log.Infof("Alerts: Status=%s, GroupLabels=%v, CommonLabels=%v", data.Status, data.GroupLabels, data.CommonLabels)
+
+	for _, alert := range data.Alerts {
+		incident := alertToIncident(alert)
+		response, err := serviceNow.CreateIncident(incident)
+
+		log.Debugf("Response %s", response)
+		if err != nil {
+			log.Errorf("Error while creating incident: %v", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func alertToIncident(alert template.Alert) Incident {
+	incident := Incident{
+		AssignmentGroup:  alert.Labels["assignment_group"],
+		ContactType:      "Monitoring System",
+		CallerID:         "Prometheus",
+		Description:      alert.Annotations["description"],
+		Impact:           "4",
+		ShortDescription: alert.Annotations["summary"],
+		Urgency:          "3",
+	}
+	return incident
 }

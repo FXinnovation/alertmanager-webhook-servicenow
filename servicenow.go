@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/prometheus/alertmanager/template"
 	"github.com/prometheus/common/log"
 )
 
@@ -40,6 +39,11 @@ type Incident struct {
 	ShortDescription string      `json:"short_description"`
 	State            json.Number `json:"state"`
 	Urgency          json.Number `json:"urgency"`
+}
+
+// ServiceNow interface
+type ServiceNow interface {
+	CreateIncident(incident Incident) (string, error)
 }
 
 // ServiceNowClient is the interface to a ServiceNow instance
@@ -113,36 +117,4 @@ func (snClient *ServiceNowClient) CreateIncident(incident Incident) (string, err
 	}
 
 	return response, nil
-}
-
-// ManageIncidents implement logic to manage incidents based on AlertManager Data
-func (snClient *ServiceNowClient) ManageIncidents(data template.Data, config Config) error {
-
-	log.Infof("Alerts: Status=%s, GroupLabels=%v, CommonLabels=%v", data.Status, data.GroupLabels, data.CommonLabels)
-
-	for _, alert := range data.Alerts {
-		incident := snClient.alertToIncident(alert)
-		_, err := snClient.CreateIncident(incident)
-
-		if err != nil {
-			log.Errorf("Error while creating incident: %v", err)
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (snClient *ServiceNowClient) alertToIncident(alert template.Alert) Incident {
-	incident := Incident{
-		AssignmentGroup:  alert.Labels["assignment_group"],
-		ContactType:      "Monitoring System",
-		CallerID:         "Prometheus",
-		Description:      alert.Annotations["description"],
-		Impact:           "4",
-		ShortDescription: alert.Annotations["summary"],
-		State:            json.Number("60"),
-		Urgency:          "3",
-	}
-	return incident
 }
