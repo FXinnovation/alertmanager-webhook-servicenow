@@ -105,14 +105,15 @@ func loadConfig(configFile string) Config {
 	// Load the config from the file
 	configData, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		log.Fatalf("Error: %v", err)
+		log.Fatalf("Error reading config file: %v", err)
 	}
 
 	errYAML := yaml.Unmarshal([]byte(configData), &config)
 	if errYAML != nil {
-		log.Fatalf("Error: %v", errYAML)
+		log.Fatalf("Error unmarshalling config file: %v", errYAML)
 	}
 
+	log.Info("ServiceNow config loaded")
 	return config
 }
 
@@ -122,7 +123,6 @@ func createSnClient(config Config) ServiceNow {
 	if err != nil {
 		log.Fatalf("Error creating the ServiceNow client: %v", err)
 	}
-	log.Info("ServiceNow config loaded")
 	return serviceNow
 }
 
@@ -156,12 +156,12 @@ func dataToIncident(data template.Data) Incident {
 	shortDescriptionBuilder.WriteString(groupKeyBuilder.String())
 
 	var descriptionBuilder strings.Builder
-	descriptionBuilder.WriteString(fmt.Sprintf("Alerts are grouped in one incident with the following key: %s.", groupKeyBuilder.String()))
-	descriptionBuilder.WriteString(fmt.Sprintf("\nNotification was sent from '%s' AlertManager receiver.", data.Receiver))
-	descriptionBuilder.WriteString(fmt.Sprintf("\nSee %v (AlertManager URL) to manage alerts.", data.ExternalURL))
+	descriptionBuilder.WriteString(fmt.Sprintf("Group key: %s", groupKeyBuilder.String()))
+	descriptionBuilder.WriteString(fmt.Sprintf("\nAlertManager receiver: %s", data.Receiver))
+	descriptionBuilder.WriteString(fmt.Sprintf("\nAlertManager source URL: %s", data.ExternalURL))
 
 	var commentBuilder strings.Builder
-	commentBuilder.WriteString("List of alerts grouped in this incident:")
+	commentBuilder.WriteString("Alerts list:")
 	for _, alert := range data.Alerts {
 		var alertBuilder strings.Builder
 		alertBuilder.WriteString(fmt.Sprintf("[%s] %v", alert.Status, alert.StartsAt))
@@ -175,13 +175,13 @@ func dataToIncident(data template.Data) Incident {
 	}
 
 	incident := Incident{
-		AssignmentGroup:  "Mygroup",
+		AssignmentGroup:  config.DefaultIncident.AssignmentGroup,
 		CallerID:         config.ServiceNow.UserName,
 		Comments:         commentBuilder.String(),
 		Description:      descriptionBuilder.String(),
-		Impact:           "2",
+		Impact:           config.DefaultIncident.Impact,
 		ShortDescription: shortDescriptionBuilder.String(),
-		Urgency:          "1",
+		Urgency:          config.DefaultIncident.Urgency,
 	}
 	return incident
 }

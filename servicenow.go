@@ -19,7 +19,8 @@ const (
 
 // Config - ServiceNow webhook configuration
 type Config struct {
-	ServiceNow ServiceNowConfig `yaml:"service_now"`
+	ServiceNow      ServiceNowConfig      `yaml:"service_now"`
+	DefaultIncident DefaultIncidentConfig `yaml:"default_incident"`
 }
 
 // ServiceNowConfig - ServiceNow instance configuration
@@ -27,6 +28,13 @@ type ServiceNowConfig struct {
 	InstanceName string `yaml:"instance_name"`
 	UserName     string `yaml:"user_name"`
 	Password     string `yaml:"password"`
+}
+
+// DefaultIncidentConfig - Default configuration for an incident
+type DefaultIncidentConfig struct {
+	AssignmentGroup string      `json:"assignment_group"`
+	Impact          json.Number `json:"impact"`
+	Urgency         json.Number `json:"urgency"`
 }
 
 // Incident is a model of the ServiceNow incident table
@@ -93,6 +101,12 @@ func (snClient *ServiceNowClient) create(table string, body []byte) (string, err
 		log.Errorf("Error sending the request. %s", err)
 		return "", err
 	}
+	if resp.StatusCode >= 400 {
+		errorMsg := fmt.Sprintf("ServiceNow returned the HTTP error code: %v", resp.StatusCode)
+		log.Error(errorMsg)
+		return "", errors.New(errorMsg)
+	}
+
 	defer resp.Body.Close()
 
 	responseBody, err := ioutil.ReadAll(resp.Body)

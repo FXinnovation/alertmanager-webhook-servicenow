@@ -13,7 +13,7 @@ all: lint vet format build test
 
 test: build ## running test after build
 	@echo ">> running tests"
-	@$(GO) test -short $(pkgs)
+	@$(GO) test -v -short $(pkgs)
 
 style: ## check code style
 	@echo ">> checking code style"
