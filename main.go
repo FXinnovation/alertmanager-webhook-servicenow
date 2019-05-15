@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/prometheus/alertmanager/template"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -126,31 +128,60 @@ func createSnClient(config Config) ServiceNow {
 
 func manageIncidents(data template.Data, config Config) error {
 
-	log.Infof("Alerts: Status=%s, GroupLabels=%v, CommonLabels=%v", data.Status, data.GroupLabels, data.CommonLabels)
+	log.Infof("Alerts: Status=%s, GroupLabels=%v, CommonLabels=%v, CommonAnnotations=%v",
+		data.Status, data.GroupLabels, data.CommonLabels, data.CommonAnnotations)
 
-	for _, alert := range data.Alerts {
-		incident := alertToIncident(alert)
-		response, err := serviceNow.CreateIncident(incident)
+	incident := dataToIncident(data)
+	_, err := serviceNow.CreateIncident(incident)
 
-		log.Debugf("Response %s", response)
-		if err != nil {
-			log.Errorf("Error while creating incident: %v", err)
-			return err
-		}
+	if err != nil {
+		log.Errorf("Error while creating incident: %v", err)
+		return err
 	}
 
 	return nil
 }
 
-func alertToIncident(alert template.Alert) Incident {
+func dataToIncident(data template.Data) Incident {
+
+	var shortDescriptionBuilder strings.Builder
+	shortDescriptionBuilder.WriteString(fmt.Sprintf("[%s] ", data.Status))
+	var groupKeyBuilder strings.Builder
+	for _, label := range data.GroupLabels.SortedPairs() {
+		if groupKeyBuilder.Len() > 0 {
+			groupKeyBuilder.WriteString(", ")
+		}
+		groupKeyBuilder.WriteString(fmt.Sprintf("%s: %s", label.Name, label.Value))
+	}
+	shortDescriptionBuilder.WriteString(groupKeyBuilder.String())
+
+	var descriptionBuilder strings.Builder
+	descriptionBuilder.WriteString(fmt.Sprintf("Alerts are grouped in one incident with the following key: %s.", groupKeyBuilder.String()))
+	descriptionBuilder.WriteString(fmt.Sprintf("\nNotification was sent from '%s' AlertManager receiver.", data.Receiver))
+	descriptionBuilder.WriteString(fmt.Sprintf("\nSee %v (AlertManager URL) to manage alerts.", data.ExternalURL))
+
+	var commentBuilder strings.Builder
+	commentBuilder.WriteString("List of alerts grouped in this incident:")
+	for _, alert := range data.Alerts {
+		var alertBuilder strings.Builder
+		alertBuilder.WriteString(fmt.Sprintf("[%s] %v", alert.Status, alert.StartsAt))
+		for _, label := range alert.Labels.SortedPairs() {
+			alertBuilder.WriteString(fmt.Sprintf("\n- %s: %s", label.Name, label.Value))
+		}
+		for _, annotation := range alert.Annotations.SortedPairs() {
+			alertBuilder.WriteString(fmt.Sprintf("\n- %s: %s", annotation.Name, annotation.Value))
+		}
+		commentBuilder.WriteString(fmt.Sprintf("\n\n%s", alertBuilder.String()))
+	}
+
 	incident := Incident{
-		AssignmentGroup:  alert.Labels["assignment_group"],
-		ContactType:      "Monitoring System",
-		CallerID:         "Prometheus",
-		Description:      alert.Annotations["description"],
-		Impact:           "4",
-		ShortDescription: alert.Annotations["summary"],
-		Urgency:          "3",
+		AssignmentGroup:  "Mygroup",
+		CallerID:         config.ServiceNow.UserName,
+		Comments:         commentBuilder.String(),
+		Description:      descriptionBuilder.String(),
+		Impact:           "2",
+		ShortDescription: shortDescriptionBuilder.String(),
+		Urgency:          "1",
 	}
 	return incident
 }

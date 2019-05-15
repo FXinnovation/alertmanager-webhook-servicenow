@@ -34,8 +34,10 @@ type Incident struct {
 	AssignmentGroup  string      `json:"assignment_group"`
 	ContactType      string      `json:"contact_type"`
 	CallerID         string      `json:"caller_id"`
+	Comments         string      `json:"comments"`
 	Description      string      `json:"description"`
 	Impact           json.Number `json:"impact"`
+	Priority         string      `json:"priority"`
 	ShortDescription string      `json:"short_description"`
 	State            json.Number `json:"state"`
 	Urgency          json.Number `json:"urgency"`
