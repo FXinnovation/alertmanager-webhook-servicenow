@@ -47,7 +47,17 @@ make test
 ```bash
 ./alertmanager-webhook-servicenow -h
 ```
-
+## Building
+Build the sources with 
+```bash
+make build
+```
+**Note**: As this is a go build you can use _GOOS_ and _GOARCH_ environment variables to build for another platform.
+### Crossbuilding
+The _Makefile_ contains a _crossbuild_ target which builds all the platforms defined in _.promu.yml_ file and puts the files in _.build_ folder. Alternatively you can specify one platform to build with the OSARCH environment variable;
+```bash
+OSARCH=linux/amd64 make crossbuild
+```
 ## Deployment
 The webhook listen on port 9877 by default.
 
