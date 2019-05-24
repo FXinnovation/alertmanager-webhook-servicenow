@@ -60,3 +60,27 @@ golint: ## gets golint for building
 	@go get -u golang.org/x/lint/golint
 
 .PHONY: all style format dependencies build test vet tarball promu
+
+VERSION?=$(shell cat VERSION)
+TAGEXISTS=$(shell git tag --list | egrep -q "^$(VERSION)$$" && echo 1 || echo 0)
+
+release-tag: ## create a release tag
+	@if [ "$(TAGEXISTS)" -eq "0" ]; then \
+		echo ">>Creating tag $(VERSION)";\
+		git tag $(VERSION) && git push -u origin $(VERSION);\
+	fi
+
+release-version: release-tag release-docker ## tag the version with VERSION
+
+crossbuild: ## creates a crossbuild in .build folder for either all the supported platforms or the one passed as OSARCH var
+	@if [ -n "$(OSARCH)" ]; then \
+		echo ">> Building $(OSARCH)";\
+		$(PROMU) crossbuild -p $(OSARCH);\
+	else\
+		echo ">> Building all platforms";\
+		$(PROMU) crossbuild;\
+	fi
+
+release-docker: ## pushes the VERSION tag to docker hub
+	@docker build -t "$(DOCKER_REPO)/$(DOCKER_IMAGE_NAME):$(VERSION)" .
+	@docker push $(DOCKER_REPO)/$(DOCKER_IMAGE_NAME):$(VERSION)
