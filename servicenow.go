@@ -32,9 +32,9 @@ type ServiceNowConfig struct {
 
 // DefaultIncidentConfig - Default configuration for an incident
 type DefaultIncidentConfig struct {
-	AssignmentGroup string      `json:"assignment_group"`
-	Impact          json.Number `json:"impact"`
-	Urgency         json.Number `json:"urgency"`
+	AssignmentGroup string      `yaml:"assignment_group"`
+	Impact          json.Number `yaml:"impact"`
+	Urgency         json.Number `yaml:"urgency"`
 }
 
 // Incident is a model of the ServiceNow incident table
