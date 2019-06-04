@@ -178,6 +178,8 @@ func dataToIncident(data template.Data) Incident {
 		AssignmentGroup:  config.DefaultIncident.AssignmentGroup,
 		CallerID:         config.ServiceNow.UserName,
 		Comments:         commentBuilder.String(),
+		Company:          config.DefaultIncident.Company,
+		ContactType:      config.DefaultIncident.ContactType,
 		Description:      descriptionBuilder.String(),
 		Impact:           config.DefaultIncident.Impact,
 		ShortDescription: shortDescriptionBuilder.String(),

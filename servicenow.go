@@ -33,6 +33,8 @@ type ServiceNowConfig struct {
 // DefaultIncidentConfig - Default configuration for an incident
 type DefaultIncidentConfig struct {
 	AssignmentGroup string      `yaml:"assignment_group"`
+	Company         string      `yaml:"company"`
+	ContactType     string      `yaml:"contact_type"`
 	Impact          json.Number `yaml:"impact"`
 	Urgency         json.Number `yaml:"urgency"`
 }
@@ -43,6 +45,7 @@ type Incident struct {
 	ContactType      string      `json:"contact_type"`
 	CallerID         string      `json:"caller_id"`
 	Comments         string      `json:"comments"`
+	Company          string      `json:"company"`
 	Description      string      `json:"description"`
 	Impact           json.Number `json:"impact"`
 	Priority         string      `json:"priority"`

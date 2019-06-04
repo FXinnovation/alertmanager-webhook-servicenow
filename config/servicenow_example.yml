@@ -12,3 +12,7 @@ default_incident:
   # Urgency: Speed at which the business expects the incident to be resolved
   # Common values: 1 (High), 2 (Medium), 3 (Low)
   urgency: 2
+  # Name of the company
+  company: "<company name>"
+  # Contact type of the incident
+  contact_type : "<contact type>"
