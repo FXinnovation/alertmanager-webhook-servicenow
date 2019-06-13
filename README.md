@@ -74,6 +74,8 @@ service_now:
   instance_name: "<instance name>"
   user_name: "<user>"
   password: "<password>"
+
+workflow:
   # Name of an existing ServiceNow table field that will be used as a key to uniquely reference an alert group in incident management workflow
   incident_group_key_field: "<incident table field>"
   # ID if the incident states for which existing incident will not be updated on firing alert group; leading to the creation of a new incident

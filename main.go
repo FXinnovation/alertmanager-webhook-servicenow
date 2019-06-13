@@ -28,14 +28,19 @@ var (
 // Config - ServiceNow webhook configuration
 type Config struct {
 	ServiceNow      ServiceNowConfig      `yaml:"service_now"`
+	Workflow        WorkflowConfig        `yaml:"workflow"`
 	DefaultIncident DefaultIncidentConfig `yaml:"default_incident"`
 }
 
 // ServiceNowConfig - ServiceNow instance configuration
 type ServiceNowConfig struct {
-	InstanceName          string        `yaml:"instance_name"`
-	UserName              string        `yaml:"user_name"`
-	Password              string        `yaml:"password"`
+	InstanceName string `yaml:"instance_name"`
+	UserName     string `yaml:"user_name"`
+	Password     string `yaml:"password"`
+}
+
+// WorkflowConfig - Incident workflow configuration
+type WorkflowConfig struct {
 	IncidentGroupKeyField string        `yaml:"incident_group_key_field"`
 	NoUpdateStates        []json.Number `yaml:"no_update_states"`
 }
@@ -146,8 +151,8 @@ func loadConfig(configFile string) (Config, error) {
 	}
 
 	// Load internal state from config
-	noUpdateStates = make(map[json.Number]bool, len(config.ServiceNow.NoUpdateStates))
-	for _, s := range config.ServiceNow.NoUpdateStates {
+	noUpdateStates = make(map[json.Number]bool, len(config.Workflow.NoUpdateStates))
+	for _, s := range config.Workflow.NoUpdateStates {
 		noUpdateStates[s] = true
 	}
 
@@ -157,7 +162,7 @@ func loadConfig(configFile string) (Config, error) {
 
 func loadSnClient() (ServiceNow, error) {
 	var err error
-	serviceNow, err = NewServiceNowClient(config.ServiceNow.InstanceName, config.ServiceNow.UserName, config.ServiceNow.Password, config.ServiceNow.IncidentGroupKeyField)
+	serviceNow, err = NewServiceNowClient(config.ServiceNow.InstanceName, config.ServiceNow.UserName, config.ServiceNow.Password, config.Workflow.IncidentGroupKeyField)
 	if err != nil {
 		return serviceNow, err
 	}
@@ -170,7 +175,7 @@ func onAlertGroup(data template.Data) error {
 		data.Status, data.GroupLabels, data.CommonLabels, data.CommonAnnotations)
 
 	getParams := map[string]string{
-		config.ServiceNow.IncidentGroupKeyField: getGroupKey(data),
+		config.Workflow.IncidentGroupKeyField: getGroupKey(data),
 	}
 
 	incidents, err := serviceNow.GetIncidents(getParams)
