@@ -84,6 +84,8 @@ workflow:
 default_incident:
   # Sysid or name of the assignment group
   assignment_group: "<assignment group>"
+  # Sysid or name of the category
+  category: "Failure"
   # Name of the company
   company: "<company name>"
   # Contact type of the incident

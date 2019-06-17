@@ -48,6 +48,7 @@ type WorkflowConfig struct {
 // DefaultIncidentConfig - Default configuration for an incident
 type DefaultIncidentConfig struct {
 	AssignmentGroup string      `yaml:"assignment_group"`
+	Category        string      `yaml:"category"`
 	Company         string      `yaml:"company"`
 	ContactType     string      `yaml:"contact_type"`
 	Impact          json.Number `yaml:"impact"`
@@ -273,6 +274,7 @@ func alertGroupToIncidentParam(data template.Data) IncidentParam {
 	incidentParam := IncidentParam{
 		AssignmentGroup:  config.DefaultIncident.AssignmentGroup,
 		CallerID:         config.ServiceNow.UserName,
+		Category:         config.DefaultIncident.Category,
 		Comments:         commentBuilder.String(),
 		Company:          config.DefaultIncident.Company,
 		ContactType:      config.DefaultIncident.ContactType,
