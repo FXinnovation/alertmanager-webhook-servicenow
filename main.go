@@ -49,6 +49,7 @@ type WorkflowConfig struct {
 type DefaultIncidentConfig struct {
 	AssignmentGroup string      `yaml:"assignment_group"`
 	Category        string      `yaml:"category"`
+	CmdbCI          string      `yaml:"cmdb_ci"`
 	Company         string      `yaml:"company"`
 	ContactType     string      `yaml:"contact_type"`
 	Impact          json.Number `yaml:"impact"`
@@ -276,6 +277,7 @@ func alertGroupToIncidentParam(data template.Data) IncidentParam {
 		AssignmentGroup:  config.DefaultIncident.AssignmentGroup,
 		CallerID:         config.ServiceNow.UserName,
 		Category:         config.DefaultIncident.Category,
+		CmdbCI:           config.DefaultIncident.CmdbCI,
 		Comments:         commentBuilder.String(),
 		Company:          config.DefaultIncident.Company,
 		ContactType:      config.DefaultIncident.ContactType,

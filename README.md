@@ -86,6 +86,8 @@ default_incident:
   assignment_group: "<assignment group>"
   # Sysid or name of the category
   category: "Failure"
+  # Sysid or name of the CMDB configuration item
+  cmdb_ci: "<configuration item>"
   # Name of the company
   company: "<company name>"
   # Contact type of the incident

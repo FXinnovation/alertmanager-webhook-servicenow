@@ -23,6 +23,7 @@ type IncidentParam struct {
 	Category         string
 	ContactType      string
 	CallerID         string
+	CmdbCI           string
 	Comments         string
 	Company          string
 	Description      string
@@ -81,6 +82,7 @@ func NewIncident(param IncidentParam, groupKeyField string) Incident {
 		"category":          param.Category,
 		"contact_type":      param.ContactType,
 		"caller_id":         param.CallerID,
+		"cmdb_ci":           param.CmdbCI,
 		"comments":          param.Comments,
 		"company":           param.Company,
 		"description":       param.Description,
