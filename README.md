@@ -93,6 +93,8 @@ default_incident:
   # Impact: Business loss and potential damage (for example, financial, customer, regulation, security, reputation, brand) caused by the incident
   # Common values: 1 (High), 2 (Medium), 3 (Low)
   impact: 2
+  # Sysid or name of the subcategory
+  subcategory: "Missing Part"
   # Urgency: Speed at which the business expects the incident to be resolved
   # Common values: 1 (High), 2 (Medium), 3 (Low)
   urgency: 2

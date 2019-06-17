@@ -52,6 +52,7 @@ type DefaultIncidentConfig struct {
 	Company         string      `yaml:"company"`
 	ContactType     string      `yaml:"contact_type"`
 	Impact          json.Number `yaml:"impact"`
+	SubCategory     string      `yaml:"subcategory"`
 	Urgency         json.Number `yaml:"urgency"`
 }
 
@@ -282,6 +283,7 @@ func alertGroupToIncidentParam(data template.Data) IncidentParam {
 		Impact:           config.DefaultIncident.Impact,
 		ShortDescription: shortDescriptionBuilder.String(),
 		GroupKey:         getGroupKey(data),
+		SubCategory:      config.DefaultIncident.SubCategory,
 		Urgency:          config.DefaultIncident.Urgency,
 	}
 

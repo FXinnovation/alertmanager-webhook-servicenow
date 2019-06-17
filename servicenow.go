@@ -30,6 +30,7 @@ type IncidentParam struct {
 	Impact           json.Number
 	ShortDescription string
 	State            json.Number
+	SubCategory      string
 	Urgency          json.Number
 }
 
@@ -86,6 +87,7 @@ func NewIncident(param IncidentParam, groupKeyField string) Incident {
 		"impact":            param.Impact,
 		"short_description": param.ShortDescription,
 		groupKeyField:       param.GroupKey,
+		"subcategory":       param.SubCategory,
 		"urgency":           param.Urgency,
 	}
 	return incident
