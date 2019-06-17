@@ -12,13 +12,13 @@ workflow:
 default_incident:
   # Sysid or name of the assignment group
   assignment_group: "<assignment group>"
+  # Name of the company
+  company: "<company name>"
+  # Contact type of the incident
+  contact_type : "<contact type>"
   # Impact: Business loss and potential damage (for example, financial, customer, regulation, security, reputation, brand) caused by the incident
   # Common values: 1 (High), 2 (Medium), 3 (Low)
   impact: 2
   # Urgency: Speed at which the business expects the incident to be resolved
   # Common values: 1 (High), 2 (Medium), 3 (Low)
   urgency: 2
-  # Name of the company
-  company: "<company name>"
-  # Contact type of the incident
-  contact_type : "<contact type>"
