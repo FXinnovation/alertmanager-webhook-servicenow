@@ -15,7 +15,7 @@ type MockedSnClient struct {
 	mock.Mock
 }
 
-func (mock *MockedSnClient) CreateIncident(incidentParam IncidentParam) (Incident, error) {
+func (mock *MockedSnClient) CreateIncident(incidentParam Incident) (Incident, error) {
 	args := mock.Called(incidentParam)
 	return args.Get(0).(Incident), args.Error(1)
 }
@@ -25,7 +25,7 @@ func (mock *MockedSnClient) GetIncidents(params map[string]string) ([]Incident, 
 	return args.Get(0).([]Incident), args.Error(1)
 }
 
-func (mock *MockedSnClient) UpdateIncident(incidentParam IncidentParam, sysID string) (Incident, error) {
+func (mock *MockedSnClient) UpdateIncident(incidentParam Incident, sysID string) (Incident, error) {
 	args := mock.Called(incidentParam, sysID)
 	return args.Get(0).(Incident), args.Error(1)
 }

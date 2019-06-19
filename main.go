@@ -43,6 +43,7 @@ type ServiceNowConfig struct {
 type WorkflowConfig struct {
 	IncidentGroupKeyField string        `yaml:"incident_group_key_field"`
 	NoUpdateStates        []json.Number `yaml:"no_update_states"`
+	IncidentUpdateFields  []string      `yaml:"incident_update_fields"`
 }
 
 // DefaultIncidentConfig - Default configuration for an incident
@@ -165,7 +166,7 @@ func loadConfig(configFile string) (Config, error) {
 
 func loadSnClient() (ServiceNow, error) {
 	var err error
-	serviceNow, err = NewServiceNowClient(config.ServiceNow.InstanceName, config.ServiceNow.UserName, config.ServiceNow.Password, config.Workflow.IncidentGroupKeyField)
+	serviceNow, err = NewServiceNowClient(config.ServiceNow.InstanceName, config.ServiceNow.UserName, config.ServiceNow.Password)
 	if err != nil {
 		return serviceNow, err
 	}
@@ -181,24 +182,24 @@ func onAlertGroup(data template.Data) error {
 		config.Workflow.IncidentGroupKeyField: getGroupKey(data),
 	}
 
-	incidents, err := serviceNow.GetIncidents(getParams)
+	existingIncidents, err := serviceNow.GetIncidents(getParams)
 	if err != nil {
 		return err
 	}
 
-	var incident Incident
-	if len(incidents) > 0 {
-		incident = incidents[0]
+	var existingIncident Incident
+	if len(existingIncidents) > 0 {
+		existingIncident = existingIncidents[0]
 
-		if len(incidents) > 1 {
+		if len(existingIncidents) > 1 {
 			log.Warnf("Found multiple existing incidents for alert group key: %s. Will use first one.", getGroupKey(data))
 		}
 	}
 
 	if data.Status == "firing" {
-		return onFiringGroup(data, incident)
+		return onFiringGroup(data, existingIncident)
 	} else if data.Status == "resolved" {
-		return onResolvedGroup(data, incident)
+		return onResolvedGroup(data, existingIncident)
 	} else {
 		log.Warnf("Unknown alert group status: %s", data.Status)
 	}
@@ -206,21 +207,21 @@ func onAlertGroup(data template.Data) error {
 	return nil
 }
 
-func onFiringGroup(data template.Data, incident Incident) error {
-	incidentParam := alertGroupToIncidentParam(data)
-	if incident == nil {
+func onFiringGroup(data template.Data, existingIncident Incident) error {
+	incidentParam := alertGroupToIncident(data)
+	if existingIncident == nil {
 		log.Infof("Found no existing incident for firing alert group key: %s", getGroupKey(data))
 		if _, err := serviceNow.CreateIncident(incidentParam); err != nil {
 			return err
 		}
 	} else {
-		log.Infof("Found existing incident (%s), with state %s, for firing alert group key: %s", incident.GetNumber(), incident.GetState(), getGroupKey(data))
-		if noUpdateStates[incident.GetState()] {
+		log.Infof("Found existing incident (%s), with state %s, for firing alert group key: %s", existingIncident.GetNumber(), existingIncident.GetState(), getGroupKey(data))
+		if noUpdateStates[existingIncident.GetState()] {
 			if _, err := serviceNow.CreateIncident(incidentParam); err != nil {
 				return err
 			}
 		} else {
-			if _, err := serviceNow.UpdateIncident(incidentParam, incident.GetSysID()); err != nil {
+			if _, err := serviceNow.UpdateIncident(incidentParam, existingIncident.GetSysID()); err != nil {
 				return err
 			}
 		}
@@ -228,20 +229,20 @@ func onFiringGroup(data template.Data, incident Incident) error {
 	return nil
 }
 
-func onResolvedGroup(data template.Data, incident Incident) error {
-	incidentParam := alertGroupToIncidentParam(data)
-	if incident == nil {
+func onResolvedGroup(data template.Data, existingIncident Incident) error {
+	incidentParam := alertGroupToIncident(data)
+	if existingIncident == nil {
 		log.Errorf("Found no existing incident for resolved alert group key: %s. No incident will be created/updated.", getGroupKey(data))
 	} else {
-		log.Infof("Found existing incident (%s), with state %s, for resolved alert group key: %s", incident.GetNumber(), incident.GetState(), getGroupKey(data))
-		if _, err := serviceNow.UpdateIncident(incidentParam, incident.GetSysID()); err != nil {
+		log.Infof("Found existing incident (%s), with state %s, for resolved alert group key: %s", existingIncident.GetNumber(), existingIncident.GetState(), getGroupKey(data))
+		if _, err := serviceNow.UpdateIncident(incidentParam, existingIncident.GetSysID()); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func alertGroupToIncidentParam(data template.Data) IncidentParam {
+func alertGroupToIncident(data template.Data) Incident {
 
 	var shortDescriptionBuilder strings.Builder
 	shortDescriptionBuilder.WriteString(fmt.Sprintf("[%s] ", data.Status))
@@ -273,23 +274,23 @@ func alertGroupToIncidentParam(data template.Data) IncidentParam {
 		commentBuilder.WriteString(fmt.Sprintf("\n\n%s", alertBuilder.String()))
 	}
 
-	incidentParam := IncidentParam{
-		AssignmentGroup:  config.DefaultIncident.AssignmentGroup,
-		CallerID:         config.ServiceNow.UserName,
-		Category:         config.DefaultIncident.Category,
-		CmdbCI:           config.DefaultIncident.CmdbCI,
-		Comments:         commentBuilder.String(),
-		Company:          config.DefaultIncident.Company,
-		ContactType:      config.DefaultIncident.ContactType,
-		Description:      descriptionBuilder.String(),
-		Impact:           config.DefaultIncident.Impact,
-		ShortDescription: shortDescriptionBuilder.String(),
-		GroupKey:         getGroupKey(data),
-		SubCategory:      config.DefaultIncident.SubCategory,
-		Urgency:          config.DefaultIncident.Urgency,
+	incident := Incident{
+		"assignment_group":                    config.DefaultIncident.AssignmentGroup,
+		"category":                            config.DefaultIncident.Category,
+		"contact_type":                        config.DefaultIncident.ContactType,
+		"caller_id":                           config.ServiceNow.UserName,
+		"cmdb_ci":                             config.DefaultIncident.CmdbCI,
+		"comments":                            commentBuilder.String(),
+		"company":                             config.DefaultIncident.Company,
+		"description":                         descriptionBuilder.String(),
+		"impact":                              config.DefaultIncident.Impact,
+		"short_description":                   shortDescriptionBuilder.String(),
+		config.Workflow.IncidentGroupKeyField: getGroupKey(data),
+		"subcategory":                         config.DefaultIncident.SubCategory,
+		"urgency":                             config.DefaultIncident.Urgency,
 	}
 
-	return incidentParam
+	return incident
 }
 
 func getGroupKey(data template.Data) string {

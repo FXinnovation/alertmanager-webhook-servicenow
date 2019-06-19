@@ -8,6 +8,9 @@ workflow:
   incident_group_key_field: "<incident table field>"
   # ID if the incident states for which existing incident will not be updated on firing alert group; leading to the creation of a new incident
   no_update_states: [6,7]
+  # Name of the incident fields that should be set when an existing incident is updated
+  incident_update_fields:
+    - "comment"
 
 default_incident:
   # Sysid or name of the assignment group

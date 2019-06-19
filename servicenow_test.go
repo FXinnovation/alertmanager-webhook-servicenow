@@ -10,23 +10,22 @@ import (
 	"testing"
 )
 
-var basicIncidentParam = IncidentParam{
-	AssignmentGroup:  "42",
-	CallerID:         "Prometheus",
-	Description:      "This is the description",
-	ShortDescription: "This is the short description",
-	Impact:           "4",
-	State:            "0",
-	Urgency:          "3",
+var basicIncidentParam = Incident{
+	"assignment_group":  "42",
+	"caller_id":         "Prometheus",
+	"description":       "This is the description",
+	"short_description": "This is the short description",
+	"impact":            "4",
+	"state":             "0",
+	"urgency":           "3",
 }
 
-var wrongIncidentParam = IncidentParam{
-	Impact: "4xxx",
+var wrongIncidentParam = Incident{
+	"impact": "4xxx",
 }
 
 func TestNewServiceNowClient_OK(t *testing.T) {
-	groupKeyField := "groupKeyField"
-	snClient, err := NewServiceNowClient("instanceName", "userName", "password", groupKeyField)
+	snClient, err := NewServiceNowClient("instanceName", "userName", "password")
 
 	if err != nil {
 		t.Errorf("Error occured %s", err)
@@ -45,14 +44,10 @@ func TestNewServiceNowClient_OK(t *testing.T) {
 	if reflect.TypeOf(&http.Client{}) != reflect.TypeOf(snClient.client) {
 		t.Errorf("Unexpected client type; got: %v, want: %v", reflect.TypeOf(snClient.client), reflect.TypeOf(&http.Client{}))
 	}
-
-	if snClient.groupKeyField != groupKeyField {
-		t.Errorf("Unexpected groupKeyField; got: %v, want: %v", snClient.groupKeyField, groupKeyField)
-	}
 }
 
 func TestNewServiceNowClient_MissingInstanceName(t *testing.T) {
-	_, err := NewServiceNowClient("", "userName", "password", "groupKeyField")
+	_, err := NewServiceNowClient("", "userName", "password")
 
 	if err == nil {
 		t.Errorf("Expected an error, got none")
@@ -60,7 +55,7 @@ func TestNewServiceNowClient_MissingInstanceName(t *testing.T) {
 }
 
 func TestNewServiceNowClient_MissingUserName(t *testing.T) {
-	_, err := NewServiceNowClient("instancename", "", "password", "groupKeyField")
+	_, err := NewServiceNowClient("instancename", "", "password")
 
 	if err == nil {
 		t.Errorf("Expected an error, got none")
@@ -68,15 +63,7 @@ func TestNewServiceNowClient_MissingUserName(t *testing.T) {
 }
 
 func TestNewServiceNowClient_MissingPassword(t *testing.T) {
-	_, err := NewServiceNowClient("instancename", "userName", "", "groupKeyField")
-
-	if err == nil {
-		t.Errorf("Expected an error, got none")
-	}
-}
-
-func TestNewServiceNowClient_MissingGroupKeyField(t *testing.T) {
-	_, err := NewServiceNowClient("instancename", "userName", "password", "")
+	_, err := NewServiceNowClient("instancename", "userName", "")
 
 	if err == nil {
 		t.Errorf("Expected an error, got none")
@@ -96,7 +83,7 @@ func TestCreateIncident_OK(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(testHandler))
 	defer ts.Close()
 
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	snClient.baseURL = ts.URL
 
 	if err != nil {
@@ -130,7 +117,7 @@ func TestCreateIncident_OK_No_AG(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(testHandler))
 	defer ts.Close()
 
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	snClient.baseURL = ts.URL
 
 	if err != nil {
@@ -156,7 +143,7 @@ func TestCreateIncident_IncidentMarshallError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(testHandler))
 	defer ts.Close()
 
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	snClient.baseURL = ts.URL
 
 	if err != nil {
@@ -172,7 +159,7 @@ func TestCreateIncident_IncidentMarshallError(t *testing.T) {
 }
 
 func TestCreateIncident_CreateRequestError(t *testing.T) {
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	// Cause an error by using an invalid URL
 	snClient.baseURL = "very bad url"
 
@@ -191,7 +178,7 @@ func TestCreateIncident_DoRequestError(t *testing.T) {
 	testHandler := func(w http.ResponseWriter, r *http.Request) {}
 	ts := httptest.NewServer(http.HandlerFunc(testHandler))
 
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	snClient.baseURL = ts.URL
 
 	if err != nil {
@@ -215,7 +202,7 @@ func TestCreateIncident_InternalServerError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(testHandler))
 	defer ts.Close()
 
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	snClient.baseURL = ts.URL
 
 	if err != nil {
@@ -241,7 +228,7 @@ func TestGetIncidents_OK(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(testHandler))
 	defer ts.Close()
 
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	snClient.baseURL = ts.URL
 	if err != nil {
 		t.Errorf("Error occured on NewServiceNowClient: %s", err)
@@ -261,7 +248,7 @@ func TestGetIncidents_OK(t *testing.T) {
 }
 
 func TestGetIncidents_CreateRequestError(t *testing.T) {
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	// Cause an error by using an invalid URL
 	snClient.baseURL = "very bad url"
 
@@ -289,7 +276,7 @@ func TestUpdateIncident_OK(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(testHandler))
 	defer ts.Close()
 
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	snClient.baseURL = ts.URL
 
 	if err != nil {
@@ -311,7 +298,7 @@ func TestUpdateIncident_OK(t *testing.T) {
 }
 
 func TestUpdateIncident_CreateRequestError(t *testing.T) {
-	snClient, err := NewServiceNowClient("instancename", "username", "password", "u_other_reference_1")
+	snClient, err := NewServiceNowClient("instancename", "username", "password")
 	// Cause an error by using an invalid URL
 	snClient.baseURL = "very bad url"
 
