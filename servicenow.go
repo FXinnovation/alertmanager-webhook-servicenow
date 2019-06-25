@@ -211,7 +211,7 @@ func (snClient *ServiceNowClient) GetIncidents(params map[string]string) ([]Inci
 
 // UpdateIncident will update an incident in ServiceNow from a given Incident, and return the updated incident
 func (snClient *ServiceNowClient) UpdateIncident(incidentParam Incident, sysID string) (Incident, error) {
-	log.Infof("Update ServiceNow incident with id : %s", sysID)
+	log.Infof("Update %v field(s) of ServiceNow incident with id : %s", len(incidentParam), sysID)
 
 	postBody, err := json.Marshal(incidentParam)
 	if err != nil {
