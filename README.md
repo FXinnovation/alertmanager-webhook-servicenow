@@ -13,9 +13,9 @@ One incident is created per distinct group key — as defined by the [`group_by`
 ### Incident management workflow
 The supported incident workflow is the following:
 - Create a new incident if a firing alert group is currently not associated to an existing incident, or if an associated incident exists but is in a state where update is not allowed (this is configurable in the webhook, but will usually be `closed` or `resolved` state)
-- Update an existing incident if the status of the alert group is resolved, or if a firing alert group occurs and is in a state where update is allowed.
+- Update an existing incident if the status of the alert group is resolved, or if a firing alert group occurs and is in a state where update is allowed. Incident fields to be updated is configurable.
 
-Note that when an incident is updated, data fields are updated (description, comments, etc...), but incident state is not changed. In the future, an optional auto-resolve feature may be added to move an incident to `resolved` state when the alert group has a resolved status.
+Note that when an incident is updated, configured data fields are updated (description, comments, etc...), but incident state is not changed. In the future, an optional auto-resolve feature may be added to move an incident to `resolved` state when the alert group has a resolved status.
 
 ## Planned features
 - Support more ServiceNow incident fields
@@ -80,6 +80,9 @@ workflow:
   incident_group_key_field: "<incident table field>"
   # ID if the incident states for which existing incident will not be updated on firing alert group; leading to the creation of a new incident
   no_update_states: [6,7]
+  # Name of the incident fields that should be set when an existing incident is updated
+  incident_update_fields:
+    - "comments"
 
 default_incident:
   # Sysid or name of the assignment group
