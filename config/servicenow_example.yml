@@ -10,7 +10,7 @@ workflow:
   no_update_states: [6,7]
   # Name of the incident fields that should be set when an existing incident is updated
   incident_update_fields:
-    - "comment"
+    - "comments"
 
 default_incident:
   # Sysid or name of the assignment group

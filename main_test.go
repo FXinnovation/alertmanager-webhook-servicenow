@@ -32,10 +32,17 @@ func (mock *MockedSnClient) UpdateIncident(incidentParam Incident, sysID string)
 
 func TestWebhookHandler_Firing_DoNotExists_OK(t *testing.T) {
 	loadConfig("config/servicenow_example.yml")
+	incidentUpdateFields = map[string]bool{}
 	snClientMock := new(MockedSnClient)
 	serviceNow = snClientMock
 	snClientMock.On("GetIncidents", mock.Anything).Return([]Incident{}, nil)
-	snClientMock.On("CreateIncident", mock.Anything).Return(Incident{}, nil)
+	snClientMock.On("CreateIncident", mock.Anything).Run(func(args mock.Arguments) {
+		incident := args.Get(0).(Incident)
+		if len(incident) == 0 {
+			t.Errorf("Wrong incident len: got %v, do not want %v", len(incident), 0)
+		}
+	}).Return(Incident{}, nil)
+	snClientMock.On("UpdateIncident", mock.Anything, mock.Anything).Return(Incident{}, errors.New("Update should not be called"))
 
 	// Load a simple example of a body coming from AlertManager
 	data, err := ioutil.ReadFile("test/alertmanager_firing.json")
@@ -99,11 +106,19 @@ func TestWebhookHandler_Firing_Exists_Create_OK(t *testing.T) {
 
 func TestWebhookHandler_Firing_Exists_Update_OK(t *testing.T) {
 	loadConfig("config/servicenow_example.yml")
+	incidentUpdateFields = map[string]bool{
+		"comments": true,
+	}
 	snClientMock := new(MockedSnClient)
 	serviceNow = snClientMock
 	snClientMock.On("GetIncidents", mock.Anything).Return([]Incident{Incident{"state": "1", "number": "INC42", "sys_id": "42"}}, nil)
 	snClientMock.On("CreateIncident", mock.Anything).Return(Incident{}, errors.New("Create should not be called"))
-	snClientMock.On("UpdateIncident", mock.Anything, mock.Anything).Return(Incident{}, nil)
+	snClientMock.On("UpdateIncident", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		incident := args.Get(0).(Incident)
+		if len(incident) != 1 {
+			t.Errorf("Wrong incident len: got %v, want %v", len(incident), 1)
+		}
+	}).Return(Incident{}, nil)
 
 	// Load a simple example of a body coming from AlertManager
 	data, err := ioutil.ReadFile("test/alertmanager_firing.json")

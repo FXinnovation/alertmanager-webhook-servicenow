@@ -18,11 +18,12 @@ import (
 )
 
 var (
-	configFile     = kingpin.Flag("config.file", "ServiceNow configuration file.").Default("config/servicenow.yml").String()
-	listenAddress  = kingpin.Flag("web.listen-address", "The address to listen on for HTTP requests.").Default(":9877").String()
-	config         Config
-	serviceNow     ServiceNow
-	noUpdateStates map[json.Number]bool
+	configFile           = kingpin.Flag("config.file", "ServiceNow configuration file.").Default("config/servicenow.yml").String()
+	listenAddress        = kingpin.Flag("web.listen-address", "The address to listen on for HTTP requests.").Default(":9877").String()
+	config               Config
+	serviceNow           ServiceNow
+	noUpdateStates       map[json.Number]bool
+	incidentUpdateFields map[string]bool
 )
 
 // Config - ServiceNow webhook configuration
@@ -160,6 +161,12 @@ func loadConfig(configFile string) (Config, error) {
 		noUpdateStates[s] = true
 	}
 
+	// Load internal incidents update fields from config
+	incidentUpdateFields = make(map[string]bool, len(config.Workflow.IncidentUpdateFields))
+	for _, f := range config.Workflow.IncidentUpdateFields {
+		incidentUpdateFields[f] = true
+	}
+
 	log.Info("ServiceNow config loaded")
 	return config, nil
 }
@@ -208,20 +215,22 @@ func onAlertGroup(data template.Data) error {
 }
 
 func onFiringGroup(data template.Data, existingIncident Incident) error {
-	incidentParam := alertGroupToIncident(data)
+	incidentCreateParam := alertGroupToIncident(data)
+	incidentUpdateParam := filterForUpdate(incidentCreateParam)
+
 	if existingIncident == nil {
 		log.Infof("Found no existing incident for firing alert group key: %s", getGroupKey(data))
-		if _, err := serviceNow.CreateIncident(incidentParam); err != nil {
+		if _, err := serviceNow.CreateIncident(incidentCreateParam); err != nil {
 			return err
 		}
 	} else {
 		log.Infof("Found existing incident (%s), with state %s, for firing alert group key: %s", existingIncident.GetNumber(), existingIncident.GetState(), getGroupKey(data))
 		if noUpdateStates[existingIncident.GetState()] {
-			if _, err := serviceNow.CreateIncident(incidentParam); err != nil {
+			if _, err := serviceNow.CreateIncident(incidentCreateParam); err != nil {
 				return err
 			}
 		} else {
-			if _, err := serviceNow.UpdateIncident(incidentParam, existingIncident.GetSysID()); err != nil {
+			if _, err := serviceNow.UpdateIncident(incidentUpdateParam, existingIncident.GetSysID()); err != nil {
 				return err
 			}
 		}
@@ -230,12 +239,13 @@ func onFiringGroup(data template.Data, existingIncident Incident) error {
 }
 
 func onResolvedGroup(data template.Data, existingIncident Incident) error {
-	incidentParam := alertGroupToIncident(data)
+	incidentCreateParam := alertGroupToIncident(data)
+	incidentUpdateParam := filterForUpdate(incidentCreateParam)
 	if existingIncident == nil {
 		log.Errorf("Found no existing incident for resolved alert group key: %s. No incident will be created/updated.", getGroupKey(data))
 	} else {
 		log.Infof("Found existing incident (%s), with state %s, for resolved alert group key: %s", existingIncident.GetNumber(), existingIncident.GetState(), getGroupKey(data))
-		if _, err := serviceNow.UpdateIncident(incidentParam, existingIncident.GetSysID()); err != nil {
+		if _, err := serviceNow.UpdateIncident(incidentUpdateParam, existingIncident.GetSysID()); err != nil {
 			return err
 		}
 	}
@@ -291,6 +301,16 @@ func alertGroupToIncident(data template.Data) Incident {
 	}
 
 	return incident
+}
+
+func filterForUpdate(incident Incident) Incident {
+	incidentUpdate := Incident{}
+	for field, value := range incident {
+		if incidentUpdateFields[field] {
+			incidentUpdate[field] = value
+		}
+	}
+	return incidentUpdate
 }
 
 func getGroupKey(data template.Data) string {
