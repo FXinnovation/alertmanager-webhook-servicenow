@@ -8,7 +8,7 @@ A [Prometheus AlertManager](https://github.com/prometheus/alertmanager) webhook 
 The supported authentication to ServiceNow is through a service account (basic authentication through HTTPS).
 
 ### Creation of incident by alert group
-One incident is created per distinct group key — as defined by the [`group_by`](https://prometheus.io/docs/alerting/configuration/#<route>) parameter of Alertmanager's `route` configuration section. This avoid spamming ServiceNow with incidents when a huge system failure occurs, and still provide a very flexible mechanism to group alerts in one incident.
+One incident is created per distinct group key — as defined by the [`group_by`](https://prometheus.io/docs/alerting/configuration/#<route>) parameter of Alertmanager's `route` configuration section. This avoid spamming ServiceNow with incidents when a huge system failure occurs, and still provide a very flexible mechanism to group alerts in one incident. The ServiceNow field used to hold the group key is configurable through the `incident_group_key_field` property and will contain a hash of the group key.
 
 ### Incident management workflow
 The supported incident workflow is the following:

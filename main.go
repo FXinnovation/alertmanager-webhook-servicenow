@@ -15,6 +15,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/prometheus/common/log"
+
+	"crypto/md5"
 )
 
 var (
@@ -314,5 +316,6 @@ func filterForUpdate(incident Incident) Incident {
 }
 
 func getGroupKey(data template.Data) string {
-	return fmt.Sprintf("%v", data.GroupLabels.SortedPairs())
+	hash := md5.Sum([]byte(fmt.Sprintf("%v", data.GroupLabels.SortedPairs())))
+	return fmt.Sprintf("%x", hash)
 }
