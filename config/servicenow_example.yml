@@ -13,22 +13,29 @@ workflow:
   incident_update_fields:
     - "comments"
 
+# All incidents fields configuration supports Go templating
 default_incident:
   # Sysid or name of the assignment group
-  assignment_group: "<assignment group>"
+  assignment_group: "{{.CommonAnnotations.assignment_group}}"
   # Sysid or name of the category
   category: "Failure"
   # Sysid or name of the CMDB configuration item
-  cmdb_ci: "<configuration item>"
+  cmdb_ci: "{{.CommonAnnotations.cmdb_ci}}"
+  # Text of the comments
+  comments: "My comments are {{.CommonAnnotations.comments}}"
   # Name of the company
-  company: "<company name>"
+  company: "{{.CommonAnnotations.company}}"
   # Contact type of the incident
-  contact_type : "<contact type>"
+  contact_type : "{{.CommonAnnotations.contact_type}}"
+  # Text of the description
+  description: "My description"
   # Impact: Business loss and potential damage (for example, financial, customer, regulation, security, reputation, brand) caused by the incident
   # Common values: 1 (High), 2 (Medium), 3 (Low)
-  impact: 2
+  impact: "2"
+  # Text of the short_description
+  short_description: "My short description"
   # Sysid or name of the subcategory
   subcategory: "Missing Part"
   # Urgency: Speed at which the business expects the incident to be resolved
   # Common values: 1 (High), 2 (Medium), 3 (Low)
-  urgency: 2
+  urgency: "{{.CommonAnnotations.urgency}}"

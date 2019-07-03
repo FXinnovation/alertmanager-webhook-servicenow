@@ -53,14 +53,17 @@ type WorkflowConfig struct {
 
 // DefaultIncidentConfig - Default configuration for an incident
 type DefaultIncidentConfig struct {
-	AssignmentGroup string      `yaml:"assignment_group"`
-	Category        string      `yaml:"category"`
-	CmdbCI          string      `yaml:"cmdb_ci"`
-	Company         string      `yaml:"company"`
-	ContactType     string      `yaml:"contact_type"`
-	Impact          json.Number `yaml:"impact"`
-	SubCategory     string      `yaml:"subcategory"`
-	Urgency         json.Number `yaml:"urgency"`
+	AssignmentGroup  string `yaml:"assignment_group"`
+	Category         string `yaml:"category"`
+	CmdbCI           string `yaml:"cmdb_ci"`
+	Comments         string `yaml:"comments"`
+	Company          string `yaml:"company"`
+	ContactType      string `yaml:"contact_type"`
+	Description      string `yaml:"description"`
+	Impact           string `yaml:"impact"`
+	ShortDescription string `yaml:"short_description"`
+	SubCategory      string `yaml:"subcategory"`
+	Urgency          string `yaml:"urgency"`
 }
 
 // JSONResponse is the Webhook http response
@@ -219,7 +222,11 @@ func onAlertGroup(data template.Data) error {
 }
 
 func onFiringGroup(data template.Data, existingIncident Incident) error {
-	incidentCreateParam := alertGroupToIncident(data)
+	incidentCreateParam, err := alertGroupToIncident(data)
+	if err != nil {
+		return err
+	}
+
 	incidentUpdateParam := filterForUpdate(incidentCreateParam)
 
 	if existingIncident == nil {
@@ -243,7 +250,11 @@ func onFiringGroup(data template.Data, existingIncident Incident) error {
 }
 
 func onResolvedGroup(data template.Data, existingIncident Incident) error {
-	incidentCreateParam := alertGroupToIncident(data)
+	incidentCreateParam, err := alertGroupToIncident(data)
+	if err != nil {
+		return err
+	}
+
 	incidentUpdateParam := filterForUpdate(incidentCreateParam)
 	if existingIncident == nil {
 		log.Errorf("Found no existing incident for resolved alert group key: %s. No incident will be created/updated.", getGroupKey(data))
@@ -256,7 +267,22 @@ func onResolvedGroup(data template.Data, existingIncident Incident) error {
 	return nil
 }
 
-func alertGroupToIncident(data template.Data) Incident {
+func alertGroupToIncident(data template.Data) (Incident, error) {
+
+	shortDescription := getDefaultShortDescription(data)
+	if config.DefaultIncident.ShortDescription != "" {
+		shortDescription = config.DefaultIncident.ShortDescription
+	}
+
+	description := getDefaultDescription(data)
+	if config.DefaultIncident.Description != "" {
+		description = config.DefaultIncident.Description
+	}
+
+	comments := getDefaultComment(data)
+	if config.DefaultIncident.Comments != "" {
+		comments = config.DefaultIncident.Comments
+	}
 
 	incident := Incident{
 		"assignment_group":                    config.DefaultIncident.AssignmentGroup,
@@ -264,17 +290,25 @@ func alertGroupToIncident(data template.Data) Incident {
 		"contact_type":                        config.DefaultIncident.ContactType,
 		"caller_id":                           config.ServiceNow.UserName,
 		"cmdb_ci":                             config.DefaultIncident.CmdbCI,
-		"comments":                            getDefaultComment(data),
+		"comments":                            comments,
 		"company":                             config.DefaultIncident.Company,
-		"description":                         getDefaultDescription(data),
+		"description":                         description,
 		"impact":                              config.DefaultIncident.Impact,
-		"short_description":                   getDefaultShortDescription(data),
+		"short_description":                   shortDescription,
 		config.Workflow.IncidentGroupKeyField: getGroupKey(data),
 		"subcategory":                         config.DefaultIncident.SubCategory,
 		"urgency":                             config.DefaultIncident.Urgency,
 	}
 
-	return incident
+	for key, val := range incident {
+		var err error
+		incident[key], err = applyTemplate(val.(string), data)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return incident, nil
 }
 
 func filterForUpdate(incident Incident) Incident {
