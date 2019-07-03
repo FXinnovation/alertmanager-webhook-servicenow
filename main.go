@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -17,6 +18,7 @@ import (
 	"github.com/prometheus/common/log"
 
 	"crypto/md5"
+	tmpltext "text/template"
 )
 
 var (
@@ -256,47 +258,17 @@ func onResolvedGroup(data template.Data, existingIncident Incident) error {
 
 func alertGroupToIncident(data template.Data) Incident {
 
-	var shortDescriptionBuilder strings.Builder
-	shortDescriptionBuilder.WriteString(fmt.Sprintf("[%s] ", data.Status))
-	var groupKeyBuilder strings.Builder
-	for _, label := range data.GroupLabels.SortedPairs() {
-		if groupKeyBuilder.Len() > 0 {
-			groupKeyBuilder.WriteString(", ")
-		}
-		groupKeyBuilder.WriteString(fmt.Sprintf("%s: %s", label.Name, label.Value))
-	}
-	shortDescriptionBuilder.WriteString(groupKeyBuilder.String())
-
-	var descriptionBuilder strings.Builder
-	descriptionBuilder.WriteString(fmt.Sprintf("Group key: %s", groupKeyBuilder.String()))
-	descriptionBuilder.WriteString(fmt.Sprintf("\nAlertManager receiver: %s", data.Receiver))
-	descriptionBuilder.WriteString(fmt.Sprintf("\nAlertManager source URL: %s", data.ExternalURL))
-
-	var commentBuilder strings.Builder
-	commentBuilder.WriteString("Alerts list:")
-	for _, alert := range data.Alerts {
-		var alertBuilder strings.Builder
-		alertBuilder.WriteString(fmt.Sprintf("[%s] %v", alert.Status, alert.StartsAt))
-		for _, label := range alert.Labels.SortedPairs() {
-			alertBuilder.WriteString(fmt.Sprintf("\n- %s: %s", label.Name, label.Value))
-		}
-		for _, annotation := range alert.Annotations.SortedPairs() {
-			alertBuilder.WriteString(fmt.Sprintf("\n- %s: %s", annotation.Name, annotation.Value))
-		}
-		commentBuilder.WriteString(fmt.Sprintf("\n\n%s", alertBuilder.String()))
-	}
-
 	incident := Incident{
 		"assignment_group":                    config.DefaultIncident.AssignmentGroup,
 		"category":                            config.DefaultIncident.Category,
 		"contact_type":                        config.DefaultIncident.ContactType,
 		"caller_id":                           config.ServiceNow.UserName,
 		"cmdb_ci":                             config.DefaultIncident.CmdbCI,
-		"comments":                            commentBuilder.String(),
+		"comments":                            getDefaultComment(data),
 		"company":                             config.DefaultIncident.Company,
-		"description":                         descriptionBuilder.String(),
+		"description":                         getDefaultDescription(data),
 		"impact":                              config.DefaultIncident.Impact,
-		"short_description":                   shortDescriptionBuilder.String(),
+		"short_description":                   getDefaultShortDescription(data),
 		config.Workflow.IncidentGroupKeyField: getGroupKey(data),
 		"subcategory":                         config.DefaultIncident.SubCategory,
 		"urgency":                             config.DefaultIncident.Urgency,
@@ -318,4 +290,62 @@ func filterForUpdate(incident Incident) Incident {
 func getGroupKey(data template.Data) string {
 	hash := md5.Sum([]byte(fmt.Sprintf("%v", data.GroupLabels.SortedPairs())))
 	return fmt.Sprintf("%x", hash)
+}
+
+func getGroupKeyString(data template.Data) string {
+	var groupKeyBuilder strings.Builder
+	for _, label := range data.GroupLabels.SortedPairs() {
+		if groupKeyBuilder.Len() > 0 {
+			groupKeyBuilder.WriteString(", ")
+		}
+		groupKeyBuilder.WriteString(fmt.Sprintf("%s: %s", label.Name, label.Value))
+	}
+	return groupKeyBuilder.String()
+}
+
+func getDefaultShortDescription(data template.Data) string {
+	var shortDescriptionBuilder strings.Builder
+	shortDescriptionBuilder.WriteString(fmt.Sprintf("[%s] ", data.Status))
+	shortDescriptionBuilder.WriteString(getGroupKeyString(data))
+	return shortDescriptionBuilder.String()
+}
+
+func getDefaultDescription(data template.Data) string {
+	var descriptionBuilder strings.Builder
+	descriptionBuilder.WriteString(fmt.Sprintf("Group key: %s", getGroupKeyString(data)))
+	descriptionBuilder.WriteString(fmt.Sprintf("\nAlertManager receiver: %s", data.Receiver))
+	descriptionBuilder.WriteString(fmt.Sprintf("\nAlertManager source URL: %s", data.ExternalURL))
+	return descriptionBuilder.String()
+}
+
+func getDefaultComment(data template.Data) string {
+	var commentBuilder strings.Builder
+	commentBuilder.WriteString("Alerts list:")
+	for _, alert := range data.Alerts {
+		var alertBuilder strings.Builder
+		alertBuilder.WriteString(fmt.Sprintf("[%s] %v", alert.Status, alert.StartsAt))
+		for _, label := range alert.Labels.SortedPairs() {
+			alertBuilder.WriteString(fmt.Sprintf("\n- %s: %s", label.Name, label.Value))
+		}
+		for _, annotation := range alert.Annotations.SortedPairs() {
+			alertBuilder.WriteString(fmt.Sprintf("\n- %s: %s", annotation.Name, annotation.Value))
+		}
+		commentBuilder.WriteString(fmt.Sprintf("\n\n%s", alertBuilder.String()))
+	}
+	return commentBuilder.String()
+}
+
+func applyTemplate(text string, data template.Data) (string, error) {
+	tmpl, err := tmpltext.New("").Parse(text)
+	if err != nil {
+		return "", err
+	}
+
+	var result bytes.Buffer
+	err = tmpl.Execute(&result, data)
+	if err != nil {
+		return "", err
+	}
+
+	return result.String(), nil
 }

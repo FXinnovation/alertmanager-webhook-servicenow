@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/prometheus/alertmanager/template"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -268,5 +269,36 @@ func TestWebhookHandler_InternalServerError(t *testing.T) {
 	expected := `{"Status":500,"Message":"Error"}`
 	if rr.Body.String() != expected {
 		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), expected)
+	}
+}
+
+func TestApplyTemplate_emptyText(t *testing.T) {
+	data := template.Data{}
+	text := ""
+	result, err := applyTemplate(text, data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := ""
+	if result != expected {
+		t.Errorf("Unexpected result: got %v, want %v", result, expected)
+	}
+}
+
+func TestApplyTemplate_OK(t *testing.T) {
+	data := template.Data{
+		Status: "firing",
+		CommonAnnotations: map[string]string{
+			"error": "my error",
+		},
+	}
+	text := "Status is {{.Status}} and error is {{.CommonAnnotations.error}}"
+	result, err := applyTemplate(text, data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := "Status is firing and error is my error"
+	if result != expected {
+		t.Errorf("Unexpected result: got %v, want %v", result, expected)
 	}
 }
