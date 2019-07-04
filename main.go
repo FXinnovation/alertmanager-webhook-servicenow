@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/prometheus/alertmanager/template"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -269,32 +268,17 @@ func onResolvedGroup(data template.Data, existingIncident Incident) error {
 
 func alertGroupToIncident(data template.Data) (Incident, error) {
 
-	shortDescription := getDefaultShortDescription(data)
-	if config.DefaultIncident.ShortDescription != "" {
-		shortDescription = config.DefaultIncident.ShortDescription
-	}
-
-	description := getDefaultDescription(data)
-	if config.DefaultIncident.Description != "" {
-		description = config.DefaultIncident.Description
-	}
-
-	comments := getDefaultComment(data)
-	if config.DefaultIncident.Comments != "" {
-		comments = config.DefaultIncident.Comments
-	}
-
 	incident := Incident{
 		"assignment_group":                    config.DefaultIncident.AssignmentGroup,
 		"category":                            config.DefaultIncident.Category,
 		"contact_type":                        config.DefaultIncident.ContactType,
 		"caller_id":                           config.ServiceNow.UserName,
 		"cmdb_ci":                             config.DefaultIncident.CmdbCI,
-		"comments":                            comments,
+		"comments":                            config.DefaultIncident.Comments,
 		"company":                             config.DefaultIncident.Company,
-		"description":                         description,
+		"description":                         config.DefaultIncident.Description,
 		"impact":                              config.DefaultIncident.Impact,
-		"short_description":                   shortDescription,
+		"short_description":                   config.DefaultIncident.ShortDescription,
 		config.Workflow.IncidentGroupKeyField: getGroupKey(data),
 		"subcategory":                         config.DefaultIncident.SubCategory,
 		"urgency":                             config.DefaultIncident.Urgency,
@@ -324,49 +308,6 @@ func filterForUpdate(incident Incident) Incident {
 func getGroupKey(data template.Data) string {
 	hash := md5.Sum([]byte(fmt.Sprintf("%v", data.GroupLabels.SortedPairs())))
 	return fmt.Sprintf("%x", hash)
-}
-
-func getGroupKeyString(data template.Data) string {
-	var groupKeyBuilder strings.Builder
-	for _, label := range data.GroupLabels.SortedPairs() {
-		if groupKeyBuilder.Len() > 0 {
-			groupKeyBuilder.WriteString(", ")
-		}
-		groupKeyBuilder.WriteString(fmt.Sprintf("%s: %s", label.Name, label.Value))
-	}
-	return groupKeyBuilder.String()
-}
-
-func getDefaultShortDescription(data template.Data) string {
-	var shortDescriptionBuilder strings.Builder
-	shortDescriptionBuilder.WriteString(fmt.Sprintf("[%s] ", data.Status))
-	shortDescriptionBuilder.WriteString(getGroupKeyString(data))
-	return shortDescriptionBuilder.String()
-}
-
-func getDefaultDescription(data template.Data) string {
-	var descriptionBuilder strings.Builder
-	descriptionBuilder.WriteString(fmt.Sprintf("Group key: %s", getGroupKeyString(data)))
-	descriptionBuilder.WriteString(fmt.Sprintf("\nAlertManager receiver: %s", data.Receiver))
-	descriptionBuilder.WriteString(fmt.Sprintf("\nAlertManager source URL: %s", data.ExternalURL))
-	return descriptionBuilder.String()
-}
-
-func getDefaultComment(data template.Data) string {
-	var commentBuilder strings.Builder
-	commentBuilder.WriteString("Alerts list:")
-	for _, alert := range data.Alerts {
-		var alertBuilder strings.Builder
-		alertBuilder.WriteString(fmt.Sprintf("[%s] %v", alert.Status, alert.StartsAt))
-		for _, label := range alert.Labels.SortedPairs() {
-			alertBuilder.WriteString(fmt.Sprintf("\n- %s: %s", label.Name, label.Value))
-		}
-		for _, annotation := range alert.Annotations.SortedPairs() {
-			alertBuilder.WriteString(fmt.Sprintf("\n- %s: %s", annotation.Name, annotation.Value))
-		}
-		commentBuilder.WriteString(fmt.Sprintf("\n\n%s", alertBuilder.String()))
-	}
-	return commentBuilder.String()
 }
 
 func applyTemplate(text string, data template.Data) (string, error) {

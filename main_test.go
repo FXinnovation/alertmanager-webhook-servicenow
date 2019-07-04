@@ -302,3 +302,21 @@ func TestApplyTemplate_OK(t *testing.T) {
 		t.Errorf("Unexpected result: got %v, want %v", result, expected)
 	}
 }
+
+func TestApplyTemplate_Range(t *testing.T) {
+	data := template.Data{
+		CommonAnnotations: map[string]string{
+			"error":   "a",
+			"warning": "b",
+		},
+	}
+	text := "{{ range $key, $val := .CommonAnnotations}}{{ $key }}:{{ $val }} {{end}}"
+	result, err := applyTemplate(text, data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := "error:a warning:b "
+	if result != expected {
+		t.Errorf("Unexpected result: got %v, want %v", result, expected)
+	}
+}

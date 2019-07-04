@@ -22,18 +22,18 @@ default_incident:
   # Sysid or name of the CMDB configuration item
   cmdb_ci: "{{.CommonAnnotations.cmdb_ci}}"
   # Text of the comments
-  comments: "My comments are {{.CommonAnnotations.comments}}"
+  comments: "Alerts list:\n\n{{ range .Alerts }}[{{ .Status }}] {{.StartsAt}} {{.Labels.alertname}}\n{{.Annotations.description}}\n\n{{ end }}"
   # Name of the company
   company: "{{.CommonAnnotations.company}}"
   # Contact type of the incident
   contact_type : "{{.CommonAnnotations.contact_type}}"
   # Text of the description
-  description: "My description"
+  description: "Received alerts from AlertManager at {{.ExternalURL}} (\"{{.Receiver}}\" receiver configuration) with common descriptions:\n\n{{.CommonAnnotations.description}}"
   # Impact: Business loss and potential damage (for example, financial, customer, regulation, security, reputation, brand) caused by the incident
   # Common values: 1 (High), 2 (Medium), 3 (Low)
   impact: "2"
   # Text of the short_description
-  short_description: "My short description"
+  short_description: "Alerts from group: {{ range $key, $val := .GroupLabels}}{{ $key }}:{{ $val }} {{end}}"
   # Sysid or name of the subcategory
   subcategory: "Missing Part"
   # Urgency: Speed at which the business expects the incident to be resolved
