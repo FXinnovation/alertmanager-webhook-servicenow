@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/prometheus/alertmanager/template"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -214,7 +215,7 @@ func onAlertGroup(data template.Data) error {
 	} else if data.Status == "resolved" {
 		return onResolvedGroup(data, existingIncident)
 	} else {
-		log.Warnf("Unknown alert group status: %s", data.Status)
+		log.Errorf("Unknown alert group status: %s", data.Status)
 	}
 
 	return nil
@@ -284,13 +285,8 @@ func alertGroupToIncident(data template.Data) (Incident, error) {
 		"urgency":                             config.DefaultIncident.Urgency,
 	}
 
-	for key, val := range incident {
-		var err error
-		incident[key], err = applyTemplate(val.(string), data)
-		if err != nil {
-			return nil, err
-		}
-	}
+	applyIncidentTemplate(incident, data)
+	validateIncident(incident)
 
 	return incident, nil
 }
@@ -310,6 +306,17 @@ func getGroupKey(data template.Data) string {
 	return fmt.Sprintf("%x", hash)
 }
 
+func applyIncidentTemplate(incident Incident, data template.Data) error {
+	for key, val := range incident {
+		var err error
+		incident[key], err = applyTemplate(val.(string), data)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func applyTemplate(text string, data template.Data) (string, error) {
 	tmpl, err := tmpltext.New("").Parse(text)
 	if err != nil {
@@ -323,4 +330,22 @@ func applyTemplate(text string, data template.Data) (string, error) {
 	}
 
 	return result.String(), nil
+}
+
+func validateIncident(incident Incident) error {
+	impact := incident["impact"].(string)
+	if len(impact) > 0 {
+		if _, err := strconv.Atoi(impact); err == nil {
+			log.Errorf("'impact' field value is '%v' but should be an integer. Process was not stopped, but your configuration need to be fixed", impact)
+		}
+	}
+
+	urgency := incident["urgency"].(string)
+	if len(urgency) > 0 {
+		if _, err := strconv.Atoi(urgency); err == nil {
+			log.Errorf("'urgency' field value is '%v' but should be an integer. Process was not stopped, but your configuration need to be fixed", urgency)
+		}
+	}
+
+	return nil
 }

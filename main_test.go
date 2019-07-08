@@ -31,6 +31,14 @@ func (mock *MockedSnClient) UpdateIncident(incidentParam Incident, sysID string)
 	return args.Get(0).(Incident), args.Error(1)
 }
 
+func TestLoadSnClient_OK(t *testing.T) {
+	loadConfig("config/servicenow_example.yml")
+	_, err := loadSnClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestWebhookHandler_Firing_DoNotExists_OK(t *testing.T) {
 	loadConfig("config/servicenow_example.yml")
 	incidentUpdateFields = map[string]bool{}
@@ -303,19 +311,23 @@ func TestApplyTemplate_OK(t *testing.T) {
 	}
 }
 
-func TestApplyTemplate_Range(t *testing.T) {
+func TestApplyIncidentTemplate_Range(t *testing.T) {
 	data := template.Data{
 		CommonAnnotations: map[string]string{
 			"error":   "a",
 			"warning": "b",
 		},
 	}
-	text := "{{ range $key, $val := .CommonAnnotations}}{{ $key }}:{{ $val }} {{end}}"
-	result, err := applyTemplate(text, data)
+	incident := Incident{
+		"description": "{{ range $key, $val := .CommonAnnotations}}{{ $key }}:{{ $val }} {{end}}",
+	}
+	err := applyIncidentTemplate(incident, data)
 	if err != nil {
 		t.Fatal(err)
 	}
+	result := incident["description"]
 	expected := "error:a warning:b "
+
 	if result != expected {
 		t.Errorf("Unexpected result: got %v, want %v", result, expected)
 	}
