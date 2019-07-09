@@ -283,7 +283,7 @@ func TestWebhookHandler_InternalServerError(t *testing.T) {
 func TestApplyTemplate_emptyText(t *testing.T) {
 	data := template.Data{}
 	text := ""
-	result, err := applyTemplate(text, data)
+	result, err := applyTemplate("name", text, data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestApplyTemplate_OK(t *testing.T) {
 		},
 	}
 	text := "Status is {{.Status}} and error is {{.CommonAnnotations.error}}"
-	result, err := applyTemplate(text, data)
+	result, err := applyTemplate("name", text, data)
 	if err != nil {
 		t.Fatal(err)
 	}
