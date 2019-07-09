@@ -69,7 +69,7 @@ The webhook listen on port 9877 by default.
 ### alertmanager-webhook-servicenow config
 The webhook config is done in `config/servicenow.yml`.
 
-All `default_incident` properties supports Go templating with structure defined in [AlertManager doumentation](https://prometheus.io/docs/alerting/notifications/#data).
+All `default_incident` properties supports Go templating with structure defined in [AlertManager documentation](https://prometheus.io/docs/alerting/notifications/#data).
 
 An example can be found in [config/servicenow_example.yml](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/config/servicenow_example.yml)
 
