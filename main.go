@@ -336,14 +336,14 @@ func validateIncident(incident Incident) error {
 	impact := incident["impact"].(string)
 	if len(impact) > 0 {
 		if _, err := strconv.Atoi(impact); err != nil {
-			log.Errorf("'impact' field value is '%v' but should be a digit. Process was not stopped, but your configuration need to be fixed", impact)
+			log.Errorf("'impact' field value is '%v' but should be a digit, please fix your configuration. Incident creation/update will proceed but this field will be missing", impact)
 		}
 	}
 
 	urgency := incident["urgency"].(string)
 	if len(urgency) > 0 {
 		if _, err := strconv.Atoi(urgency); err != nil {
-			log.Errorf("'urgency' field value is '%v' but should be a digit. Process was not stopped, but your configuration need to be fixed", urgency)
+			log.Errorf("'urgency' field value is '%v' but should be a digit, please fix your configuration. Incident creation/update will proceed but this field will be missing", urgency)
 		}
 	}
 
