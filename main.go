@@ -197,23 +197,28 @@ func onAlertGroup(data template.Data) error {
 	}
 
 	existingIncidents, err := serviceNow.GetIncidents(getParams)
+	log.Infof("Found %v existing incident(s) for alert group key: %s.", len(existingIncidents), getGroupKey(data))
+
+	updatableIncidents := filterUpdatableIncidents(existingIncidents)
+	log.Infof("Found %v updatable incident(s) for alert group key: %s.", len(updatableIncidents), getGroupKey(data))
+
 	if err != nil {
 		return err
 	}
 
-	var existingIncident Incident
-	if len(existingIncidents) > 0 {
-		existingIncident = existingIncidents[0]
+	var updatableIncident Incident
+	if len(updatableIncidents) > 0 {
+		updatableIncident = updatableIncidents[0]
 
-		if len(existingIncidents) > 1 {
-			log.Warnf("Found multiple existing incidents for alert group key: %s. Will use first one.", getGroupKey(data))
+		if len(updatableIncidents) > 1 {
+			log.Warnf("As multiple updable incidents were found for alert group key: %s, first one will be used: %s", getGroupKey(data), updatableIncident.GetNumber())
 		}
 	}
 
 	if data.Status == "firing" {
-		return onFiringGroup(data, existingIncident)
+		return onFiringGroup(data, updatableIncident)
 	} else if data.Status == "resolved" {
-		return onResolvedGroup(data, existingIncident)
+		return onResolvedGroup(data, updatableIncident)
 	} else {
 		log.Errorf("Unknown alert group status: %s", data.Status)
 	}
@@ -221,7 +226,7 @@ func onAlertGroup(data template.Data) error {
 	return nil
 }
 
-func onFiringGroup(data template.Data, existingIncident Incident) error {
+func onFiringGroup(data template.Data, updatableIncident Incident) error {
 	incidentCreateParam, err := alertGroupToIncident(data)
 	if err != nil {
 		return err
@@ -229,38 +234,33 @@ func onFiringGroup(data template.Data, existingIncident Incident) error {
 
 	incidentUpdateParam := filterForUpdate(incidentCreateParam)
 
-	if existingIncident == nil {
-		log.Infof("Found no existing incident for firing alert group key: %s", getGroupKey(data))
+	if updatableIncident == nil {
+		log.Infof("Found no updatable incident for firing alert group key: %s", getGroupKey(data))
 		if _, err := serviceNow.CreateIncident(incidentCreateParam); err != nil {
 			return err
 		}
 	} else {
-		log.Infof("Found existing incident (%s), with state %s, for firing alert group key: %s", existingIncident.GetNumber(), existingIncident.GetState(), getGroupKey(data))
-		if noUpdateStates[existingIncident.GetState()] {
-			if _, err := serviceNow.CreateIncident(incidentCreateParam); err != nil {
-				return err
-			}
-		} else {
-			if _, err := serviceNow.UpdateIncident(incidentUpdateParam, existingIncident.GetSysID()); err != nil {
-				return err
-			}
+		log.Infof("Found updatable incident (%s), with state %s, for firing alert group key: %s", updatableIncident.GetNumber(), updatableIncident.GetState(), getGroupKey(data))
+		if _, err := serviceNow.UpdateIncident(incidentUpdateParam, updatableIncident.GetSysID()); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func onResolvedGroup(data template.Data, existingIncident Incident) error {
+func onResolvedGroup(data template.Data, updatableIncident Incident) error {
 	incidentCreateParam, err := alertGroupToIncident(data)
 	if err != nil {
 		return err
 	}
 
 	incidentUpdateParam := filterForUpdate(incidentCreateParam)
-	if existingIncident == nil {
-		log.Errorf("Found no existing incident for resolved alert group key: %s. No incident will be created/updated.", getGroupKey(data))
+
+	if updatableIncident == nil {
+		log.Infof("Found no updatable incident for resolved alert group key: %s. No incident will be created/updated.", getGroupKey(data))
 	} else {
-		log.Infof("Found existing incident (%s), with state %s, for resolved alert group key: %s", existingIncident.GetNumber(), existingIncident.GetState(), getGroupKey(data))
-		if _, err := serviceNow.UpdateIncident(incidentUpdateParam, existingIncident.GetSysID()); err != nil {
+		log.Infof("Found updatable incident (%s), with state %s, for resolved alert group key: %s", updatableIncident.GetNumber(), updatableIncident.GetState(), getGroupKey(data))
+		if _, err := serviceNow.UpdateIncident(incidentUpdateParam, updatableIncident.GetSysID()); err != nil {
 			return err
 		}
 	}
@@ -299,6 +299,16 @@ func filterForUpdate(incident Incident) Incident {
 		}
 	}
 	return incidentUpdate
+}
+
+func filterUpdatableIncidents(incidents []Incident) []Incident {
+	var updatableIncidents []Incident
+	for _, incident := range incidents {
+		if !noUpdateStates[incident.GetState()] {
+			updatableIncidents = append(updatableIncidents, incident)
+		}
+	}
+	return updatableIncidents
 }
 
 func getGroupKey(data template.Data) string {

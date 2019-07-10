@@ -7,7 +7,9 @@ workflow:
   # Name of an existing ServiceNow table field that will be used as a key to uniquely reference an alert group in incident management workflow. 
   # This field must accept a minimum of 32 characters.
   incident_group_key_field: "<incident table field>"
-  # ID if the incident states for which existing incident will not be updated on firing alert group; leading to the creation of a new incident
+  # ID of the incident states for which existing incident will not be updated. 
+  # For firing alert group, it will lead to the creation of a new incident.
+  # For resolved alert group, no action will be taken.
   no_update_states: [6,7]
   # Name of the incident fields that should be set when an existing incident is updated
   incident_update_fields:
