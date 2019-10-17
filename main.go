@@ -64,7 +64,7 @@ type DefaultIncidentConfig struct {
 	ShortDescription string `yaml:"short_description"`
 	SubCategory      string `yaml:"subcategory"`
 	Urgency          string `yaml:"urgency"`
-	CommonFields     map[string]string `yaml:common_fields`
+	CommonFields     map[string]string `yaml:"common_fields"`
 }
 
 // JSONResponse is the Webhook http response
