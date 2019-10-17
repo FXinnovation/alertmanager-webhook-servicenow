@@ -118,6 +118,12 @@ default_incident:
   # Urgency: Speed at which the business expects the incident to be resolved
   # Common values: 1 (High), 2 (Medium), 3 (Low)
   urgency: "<urgency value>"
+  common_fields: {}
+    #u_issue_type: "data_issue"
+    #u_affected_user: "User Name"
+    #business_service: "Service-Name"
+    #u_environment: "prod"
+    #u_source: "SomeSource"
 ```
 
 ### AlertManager config
