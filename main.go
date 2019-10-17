@@ -64,6 +64,7 @@ type DefaultIncidentConfig struct {
 	ShortDescription string `yaml:"short_description"`
 	SubCategory      string `yaml:"subcategory"`
 	Urgency          string `yaml:"urgency"`
+	CommonFields     map[string]string `yaml:common_fields`
 }
 
 // JSONResponse is the Webhook http response
@@ -284,6 +285,9 @@ func alertGroupToIncident(data template.Data) (Incident, error) {
 		"subcategory":                         config.DefaultIncident.SubCategory,
 		"urgency":                             config.DefaultIncident.Urgency,
 	}
+        for k,v := range config.DefaultIncident.CommonFields {
+                incident[k] = v
+        }
 
 	applyIncidentTemplate(incident, data)
 	validateIncident(incident)
