@@ -167,7 +167,7 @@ func loadConfigContent(configData []byte) (Config, error) {
 		incidentUpdateFields[f] = true
 	}
 	log.Info("ServiceNow config loaded")
-	return config,nil
+	return config, nil
 }
 
 func loadConfig(configFile string) (Config, error) {
