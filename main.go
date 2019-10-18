@@ -148,18 +148,11 @@ func readRequestBody(r *http.Request) (template.Data, error) {
 	return data, err
 }
 
-func loadConfig(configFile string) (Config, error) {
+func loadConfigContent(configData []byte) (Config, error) {
 	config = Config{}
-
-	// Load the config from the file
-	configData, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return config, err
-	}
-
 	errYAML := yaml.Unmarshal([]byte(configData), &config)
 	if errYAML != nil {
-		return config, err
+		return config, errYAML
 	}
 
 	// Load internal state from config
@@ -173,9 +166,18 @@ func loadConfig(configFile string) (Config, error) {
 	for _, f := range config.Workflow.IncidentUpdateFields {
 		incidentUpdateFields[f] = true
 	}
-
 	log.Info("ServiceNow config loaded")
-	return config, nil
+	return config,nil
+}
+
+func loadConfig(configFile string) (Config, error) {
+	// Load the config from the file
+	configData, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return Config{}, err
+	}
+
+	return loadConfigContent(configData)
 }
 
 func loadSnClient() (ServiceNow, error) {

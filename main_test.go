@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/prometheus/alertmanager/template"
@@ -330,5 +331,46 @@ func TestApplyIncidentTemplate_Range(t *testing.T) {
 
 	if result != expected {
 		t.Errorf("Unexpected result: got %v, want %v", result, expected)
+	}
+}
+
+func TestLoadConfigContent_Ok(t *testing.T) {
+	configFile := `
+service_now:
+ instance_name: "instance"
+ user_name: "SA"
+ password: "SA!" 
+`
+	goodConfig := Config{
+		ServiceNow: ServiceNowConfig{
+			InstanceName: "instance",
+			UserName:     "SA",
+			Password:     "SA!",
+		},
+		Workflow:        WorkflowConfig{},
+		DefaultIncident: DefaultIncidentConfig{},
+	}
+	config, err := loadConfigContent([]byte(configFile))
+	if err != nil {
+		t.Errorf("Error parsing viable content %v", err)
+	}
+	if !reflect.DeepEqual(config, goodConfig) {
+		t.Errorf("Error in getting config Got:%v, Expected config:%v", goodConfig, config)
+	}
+}
+
+func TestLoadConfigContent_ParsingError(t *testing.T) {
+	configFile := `
+service_now:
+ instance_name: "instance"
+ user_name: "SA"
+ password: "SA!" 
+TOTO
+:tatata
+`
+
+	_, err := loadConfigContent([]byte(configFile))
+	if err == nil {
+		t.Errorf("Should have an error parsing unparseable content")
 	}
 }
