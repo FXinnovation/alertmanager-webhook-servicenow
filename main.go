@@ -32,9 +32,9 @@ var (
 
 // Config - ServiceNow webhook configuration
 type Config struct {
-	ServiceNow      ServiceNowConfig      `yaml:"service_now"`
-	Workflow        WorkflowConfig        `yaml:"workflow"`
-	DefaultIncident DefaultIncidentConfig `yaml:"default_incident"`
+	ServiceNow      ServiceNowConfig  `yaml:"service_now"`
+	Workflow        WorkflowConfig    `yaml:"workflow"`
+	DefaultIncident map[string]string `yaml:"default_incident"`
 }
 
 // ServiceNowConfig - ServiceNow instance configuration
@@ -49,21 +49,6 @@ type WorkflowConfig struct {
 	IncidentGroupKeyField string        `yaml:"incident_group_key_field"`
 	NoUpdateStates        []json.Number `yaml:"no_update_states"`
 	IncidentUpdateFields  []string      `yaml:"incident_update_fields"`
-}
-
-// DefaultIncidentConfig - Default configuration for an incident
-type DefaultIncidentConfig struct {
-	AssignmentGroup  string `yaml:"assignment_group"`
-	Category         string `yaml:"category"`
-	CmdbCI           string `yaml:"cmdb_ci"`
-	Comments         string `yaml:"comments"`
-	Company          string `yaml:"company"`
-	ContactType      string `yaml:"contact_type"`
-	Description      string `yaml:"description"`
-	Impact           string `yaml:"impact"`
-	ShortDescription string `yaml:"short_description"`
-	SubCategory      string `yaml:"subcategory"`
-	Urgency          string `yaml:"urgency"`
 }
 
 // JSONResponse is the Webhook http response
@@ -272,24 +257,16 @@ func onResolvedGroup(data template.Data, updatableIncident Incident) error {
 func alertGroupToIncident(data template.Data) (Incident, error) {
 
 	incident := Incident{
-		"assignment_group":                    config.DefaultIncident.AssignmentGroup,
-		"category":                            config.DefaultIncident.Category,
-		"contact_type":                        config.DefaultIncident.ContactType,
 		"caller_id":                           config.ServiceNow.UserName,
-		"cmdb_ci":                             config.DefaultIncident.CmdbCI,
-		"comments":                            config.DefaultIncident.Comments,
-		"company":                             config.DefaultIncident.Company,
-		"description":                         config.DefaultIncident.Description,
-		"impact":                              config.DefaultIncident.Impact,
-		"short_description":                   config.DefaultIncident.ShortDescription,
 		config.Workflow.IncidentGroupKeyField: getGroupKey(data),
-		"subcategory":                         config.DefaultIncident.SubCategory,
-		"urgency":                             config.DefaultIncident.Urgency,
+	}
+
+	for k, v := range config.DefaultIncident {
+		incident[k] = v
 	}
 
 	applyIncidentTemplate(incident, data)
 	validateIncident(incident)
-
 	return incident, nil
 }
 
@@ -318,15 +295,14 @@ func getGroupKey(data template.Data) string {
 	return fmt.Sprintf("%x", hash)
 }
 
-func applyIncidentTemplate(incident Incident, data template.Data) error {
+func applyIncidentTemplate(incident Incident, data template.Data) {
 	for key, val := range incident {
 		var err error
 		incident[key], err = applyTemplate(key, val.(string), data)
 		if err != nil {
-			return err
+			log.Errorf("Error parsing default incident template for key:%s value:%s, error:%v", key, val.(string), err)
 		}
 	}
-	return nil
 }
 
 func applyTemplate(name string, text string, data template.Data) (string, error) {
@@ -344,7 +320,7 @@ func applyTemplate(name string, text string, data template.Data) (string, error)
 	return result.String(), nil
 }
 
-func validateIncident(incident Incident) error {
+func validateIncident(incident Incident) {
 	impact := incident["impact"].(string)
 	if len(impact) > 0 {
 		if _, err := strconv.Atoi(impact); err != nil {
@@ -358,6 +334,4 @@ func validateIncident(incident Incident) error {
 			log.Errorf("'urgency' field value is '%v' but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing", urgency)
 		}
 	}
-
-	return nil
 }

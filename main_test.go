@@ -289,7 +289,7 @@ func TestApplyTemplate_emptyText(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := ""
-	if result != expected {
+	if string(result) != expected {
 		t.Errorf("Unexpected result: got %v, want %v", result, expected)
 	}
 }
@@ -307,7 +307,7 @@ func TestApplyTemplate_OK(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := "Status is firing and error is my error"
-	if result != expected {
+	if string(result) != expected {
 		t.Errorf("Unexpected result: got %v, want %v", result, expected)
 	}
 }
@@ -322,10 +322,8 @@ func TestApplyIncidentTemplate_Range(t *testing.T) {
 	incident := Incident{
 		"description": "{{ range $key, $val := .CommonAnnotations}}{{ $key }}:{{ $val }} {{end}}",
 	}
-	err := applyIncidentTemplate(incident, data)
-	if err != nil {
-		t.Fatal(err)
-	}
+	applyIncidentTemplate(incident, data)
+
 	result := incident["description"]
 	expected := "error:a warning:b "
 
@@ -340,7 +338,12 @@ service_now:
  instance_name: "instance"
  user_name: "SA"
  password: "SA!" 
+
+default_incident:
+ assignment_group: "1234"
 `
+	defaultIncident := make(map[string]string)
+	defaultIncident["assignment_group"] = "1234"
 	goodConfig := Config{
 		ServiceNow: ServiceNowConfig{
 			InstanceName: "instance",
@@ -348,7 +351,7 @@ service_now:
 			Password:     "SA!",
 		},
 		Workflow:        WorkflowConfig{},
-		DefaultIncident: DefaultIncidentConfig{},
+		DefaultIncident: defaultIncident,
 	}
 	config, err := loadConfigContent([]byte(configFile))
 	if err != nil {
