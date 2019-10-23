@@ -273,7 +273,7 @@ func alertGroupToIncident(data template.Data) (Incident, error) {
 }
 
 func logErrors(errs []error) {
-	for err := range errs {
+	for _, err := range errs {
 		log.Error(err)
 	}
 }
