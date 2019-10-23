@@ -18,7 +18,6 @@ The supported incident workflow is the following:
 Note that when an incident is updated, configured data fields are updated (description, comments, etc...), but incident state is not changed. In the future, an optional auto-resolve feature may be added to move an incident to `resolved` state when the alert group has a resolved status.
 
 ## Planned features
-- Support more ServiceNow incident fields
 - Provide incident template configuration through a separate file
 - Support multiple incident configuration templates
 
@@ -71,7 +70,8 @@ The webhook listen on port 9877 by default.
 The webhook config is done in `config/servicenow.yml`.
 
 All `default_incident` properties supports Go templating with structure defined in [AlertManager documentation](https://prometheus.io/docs/alerting/notifications/#data).
-Every key value pair in `default_incident` is sent as an incident field.
+
+Every key value pair in `default_incident` is sent as an incident field, even for those not listed in the example below.
 
 An example can be found in [config/servicenow_example.yml](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/config/servicenow_example.yml)
 
