@@ -339,7 +339,7 @@ func validateIncident(incident Incident) error {
 		if _, err := strconv.Atoi(urgency.(string)); err != nil {
 			str.WriteString("'urgency' field value is ")
 			str.WriteString(urgency.(string))
-			str.WriteString("but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing.")
+			str.WriteString(" but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing.")
 		}
 	}
 	if str.Len() > 0 {
