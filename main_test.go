@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -378,20 +379,46 @@ TOTO
 	}
 }
 
-func TestValidateIncident(t *testing.T) {
-	incident := Incident{}
-	validateIncident(incident)
-	incident["impact"] = "2"
-	incident["urgency"] = "2"
-	validateIncident(incident)
-	incident["impact"] = "toto"
-	incident["urgency"] = "toto"
-	validateIncident(incident)
-	incident["impact"] = ""
-	incident["urgency"] = ""
-	validateIncident(incident)
-	incident["impact"] = nil
-	incident["urgency"] = nil
-	validateIncident(incident)
-	// test should not panic
+func Test_validateIncident(t *testing.T) {
+	type args struct {
+		incident Incident
+	}
+	tests := []struct {
+		name string
+		args args
+		want []error
+	}{
+		{
+			name: "empty",
+			args: args{Incident{}},
+			want: []error{},
+		},
+		{
+			name: "good",
+			args: args{Incident{"impact": "2", "urgency": "2"}},
+			want: []error{},
+		},
+		{
+			name: "nil",
+			args: args{Incident{"impact": nil, "urgency": nil}},
+			want: []error{},
+		},
+		{
+			name: "empty_string",
+			args: args{Incident{"impact": "", "urgency": ""}},
+			want: []error{},
+		},
+		{
+			name: "string",
+			args: args{Incident{"impact": "<no value>", "urgency": "<no value>"}},
+			want: []error{fmt.Errorf("first error"), fmt.Errorf("second error")},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := validateIncident(tt.args.incident); len(got) != len(tt.want) {
+				t.Errorf("validateIncident() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

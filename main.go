@@ -265,9 +265,17 @@ func alertGroupToIncident(data template.Data) (Incident, error) {
 		incident[k] = v
 	}
 
-	applyIncidentTemplate(incident, data)
-	validateIncident(incident)
+	errs := applyIncidentTemplate(incident, data)
+	logErrors(errs)
+	errs = validateIncident(incident)
+	logErrors(errs)
 	return incident, nil
+}
+
+func logErrors(errs []error) {
+	for err := range errs {
+		log.Error(err)
+	}
 }
 
 func filterForUpdate(incident Incident) Incident {
@@ -295,14 +303,16 @@ func getGroupKey(data template.Data) string {
 	return fmt.Sprintf("%x", hash)
 }
 
-func applyIncidentTemplate(incident Incident, data template.Data) {
+func applyIncidentTemplate(incident Incident, data template.Data) []error {
+	errorsSlice := make([]error, 0)
 	for key, val := range incident {
 		var err error
 		incident[key], err = applyTemplate(key, val.(string), data)
 		if err != nil {
-			log.Errorf("Error parsing default incident template for key:%s value:%s, error:%v", key, val.(string), err)
+			errorsSlice = append(errorsSlice, fmt.Errorf("Error parsing default incident template for key:%s value:%s, error:%v", key, val.(string), err))
 		}
 	}
+	return errorsSlice
 }
 
 func applyTemplate(name string, text string, data template.Data) (string, error) {
@@ -320,17 +330,18 @@ func applyTemplate(name string, text string, data template.Data) (string, error)
 	return result.String(), nil
 }
 
-func validateIncident(incident Incident) {
-
+func validateIncident(incident Incident) []error {
+	errorsSlice := make([]error, 0)
 	if impact, ok := incident["impact"]; ok && impact != nil && len(impact.(string)) > 0 {
 		if _, err := strconv.Atoi(impact.(string)); err != nil {
-			log.Errorf("'impact' field value is '%v' but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing", impact)
+			errorsSlice = append(errorsSlice, fmt.Errorf("'impact' field value is '%v' but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing", impact))
 		}
 	}
 
 	if urgency, ok := incident["urgency"]; ok && urgency != nil && len(urgency.(string)) > 0 {
 		if _, err := strconv.Atoi(urgency.(string)); err != nil {
-			log.Errorf("'urgency' field value is '%v' but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing", urgency)
+			errorsSlice = append(errorsSlice, fmt.Errorf("'urgency' field value is '%v' but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing", urgency))
 		}
 	}
+	return errorsSlice
 }
