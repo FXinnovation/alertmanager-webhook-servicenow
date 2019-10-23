@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/prometheus/alertmanager/template"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -265,17 +267,12 @@ func alertGroupToIncident(data template.Data) (Incident, error) {
 		incident[k] = v
 	}
 
-	errs := applyIncidentTemplate(incident, data)
-	logErrors(errs)
-	errs = validateIncident(incident)
-	logErrors(errs)
-	return incident, nil
-}
-
-func logErrors(errs []error) {
-	for _, err := range errs {
+	applyIncidentTemplate(incident, data)
+	err := validateIncident(incident)
+	if err != nil {
 		log.Error(err)
 	}
+	return incident, nil
 }
 
 func filterForUpdate(incident Incident) Incident {
@@ -303,16 +300,14 @@ func getGroupKey(data template.Data) string {
 	return fmt.Sprintf("%x", hash)
 }
 
-func applyIncidentTemplate(incident Incident, data template.Data) []error {
-	errorsSlice := make([]error, 0)
+func applyIncidentTemplate(incident Incident, data template.Data) {
 	for key, val := range incident {
 		var err error
 		incident[key], err = applyTemplate(key, val.(string), data)
 		if err != nil {
-			errorsSlice = append(errorsSlice, fmt.Errorf("Error parsing default incident template for key:%s value:%s, error:%v", key, val.(string), err))
+			log.Errorf("Error parsing default incident template for key:%s value:%s, error:%v", key, val.(string), err)
 		}
 	}
-	return errorsSlice
 }
 
 func applyTemplate(name string, text string, data template.Data) (string, error) {
@@ -330,18 +325,25 @@ func applyTemplate(name string, text string, data template.Data) (string, error)
 	return result.String(), nil
 }
 
-func validateIncident(incident Incident) []error {
-	errorsSlice := make([]error, 0)
+func validateIncident(incident Incident) error {
+	var str strings.Builder
 	if impact, ok := incident["impact"]; ok && impact != nil && len(impact.(string)) > 0 {
 		if _, err := strconv.Atoi(impact.(string)); err != nil {
-			errorsSlice = append(errorsSlice, fmt.Errorf("'impact' field value is '%v' but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing", impact))
+			str.WriteString("'impact' field value is ")
+			str.WriteString(impact.(string))
+			str.WriteString("but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing. ")
 		}
 	}
 
 	if urgency, ok := incident["urgency"]; ok && urgency != nil && len(urgency.(string)) > 0 {
 		if _, err := strconv.Atoi(urgency.(string)); err != nil {
-			errorsSlice = append(errorsSlice, fmt.Errorf("'urgency' field value is '%v' but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing", urgency))
+			str.WriteString("'urgency' field value is ")
+			str.WriteString(urgency.(string))
+			str.WriteString("but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing.")
 		}
 	}
-	return errorsSlice
+	if str.Len() > 0 {
+		return errors.New(str.String())
+	}
+	return nil
 }

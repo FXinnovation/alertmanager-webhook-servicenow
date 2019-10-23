@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -384,40 +383,40 @@ func Test_validateIncident(t *testing.T) {
 		incident Incident
 	}
 	tests := []struct {
-		name string
-		args args
-		want []error
+		name    string
+		args    args
+		wantErr bool
 	}{
 		{
-			name: "empty",
-			args: args{Incident{}},
-			want: []error{},
+			name:    "empty",
+			args:    args{Incident{}},
+			wantErr: false,
 		},
 		{
-			name: "good",
-			args: args{Incident{"impact": "2", "urgency": "2"}},
-			want: []error{},
+			name:    "good",
+			args:    args{Incident{"impact": "2", "urgency": "2"}},
+			wantErr: false,
 		},
 		{
-			name: "nil",
-			args: args{Incident{"impact": nil, "urgency": nil}},
-			want: []error{},
+			name:    "nil",
+			args:    args{Incident{"impact": nil, "urgency": nil}},
+			wantErr: false,
 		},
 		{
-			name: "empty_string",
-			args: args{Incident{"impact": "", "urgency": ""}},
-			want: []error{},
+			name:    "empty_string",
+			args:    args{Incident{"impact": "", "urgency": ""}},
+			wantErr: false,
 		},
 		{
-			name: "string",
-			args: args{Incident{"impact": "<no value>", "urgency": "<no value>"}},
-			want: []error{fmt.Errorf("first error"), fmt.Errorf("second error")},
+			name:    "string",
+			args:    args{Incident{"impact": "<no value>", "urgency": "<no value>"}},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := validateIncident(tt.args.incident); len(got) != len(tt.want) {
-				t.Errorf("validateIncident() = %v, want %v", got, tt.want)
+			if err := validateIncident(tt.args.incident); (err != nil) != tt.wantErr {
+				t.Errorf("validateIncident() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
