@@ -290,7 +290,7 @@ func TestApplyTemplate_emptyText(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := ""
-	if string(result) != expected {
+	if result != expected {
 		t.Errorf("Unexpected result: got %v, want %v", result, expected)
 	}
 }
