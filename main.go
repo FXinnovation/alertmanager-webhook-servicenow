@@ -321,16 +321,15 @@ func applyTemplate(name string, text string, data template.Data) (string, error)
 }
 
 func validateIncident(incident Incident) {
-	impact := incident["impact"].(string)
-	if len(impact) > 0 {
-		if _, err := strconv.Atoi(impact); err != nil {
+
+	if impact, ok := incident["impact"]; ok && impact != nil && len(impact.(string)) > 0 {
+		if _, err := strconv.Atoi(impact.(string)); err != nil {
 			log.Errorf("'impact' field value is '%v' but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing", impact)
 		}
 	}
 
-	urgency := incident["urgency"].(string)
-	if len(urgency) > 0 {
-		if _, err := strconv.Atoi(urgency); err != nil {
+	if urgency, ok := incident["urgency"]; ok && urgency != nil && len(urgency.(string)) > 0 {
+		if _, err := strconv.Atoi(urgency.(string)); err != nil {
 			log.Errorf("'urgency' field value is '%v' but should be an integer, please fix your configuration. Incident creation/update will proceed but this field will be missing", urgency)
 		}
 	}

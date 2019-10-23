@@ -377,3 +377,21 @@ TOTO
 		t.Errorf("Should have an error parsing unparseable content")
 	}
 }
+
+func TestValidateIncident(t *testing.T) {
+	incident := Incident{}
+	validateIncident(incident)
+	incident["impact"] = "2"
+	incident["urgency"] = "2"
+	validateIncident(incident)
+	incident["impact"] = "toto"
+	incident["urgency"] = "toto"
+	validateIncident(incident)
+	incident["impact"] = ""
+	incident["urgency"] = ""
+	validateIncident(incident)
+	incident["impact"] = nil
+	incident["urgency"] = nil
+	validateIncident(incident)
+	// test should not panic
+}
