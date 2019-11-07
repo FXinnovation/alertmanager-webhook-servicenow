@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -332,33 +333,69 @@ func TestApplyIncidentTemplate_Range(t *testing.T) {
 	}
 }
 
-func TestLoadConfigContent_Ok(t *testing.T) {
+func TestLoadConfigContent_Ok_Minimal(t *testing.T) {
 	configFile := `
 service_now:
  instance_name: "instance"
  user_name: "SA"
  password: "SA!" 
-
-default_incident:
- assignment_group: "1234"
+workflow:
+ incident_group_key_field: "u_other_reference_1"
 `
-	defaultIncident := make(map[string]string)
-	defaultIncident["assignment_group"] = "1234"
-	goodConfig := Config{
+	expectedConfig := Config{
 		ServiceNow: ServiceNowConfig{
 			InstanceName: "instance",
 			UserName:     "SA",
 			Password:     "SA!",
 		},
-		Workflow:        WorkflowConfig{},
+		Workflow: WorkflowConfig{
+			IncidentGroupKeyField: "u_other_reference_1",
+		},
+		DefaultIncident: nil,
+	}
+	loadedConfig, err := loadConfigContent([]byte(configFile))
+	if err != nil {
+		t.Errorf("Error on loading config content %v", err)
+	}
+	if !reflect.DeepEqual(loadedConfig, expectedConfig) {
+		t.Errorf("Error in getting config Got:%v, Expected config:%v", loadedConfig, expectedConfig)
+	}
+}
+
+func TestLoadConfigContent_Ok_Standard(t *testing.T) {
+	configFile := `
+service_now:
+ instance_name: "instance"
+ user_name: "SA"
+ password: "SA!" 
+workflow:
+ incident_group_key_field: "u_other_reference_1"
+ no_update_states: [6,7]
+ incident_update_fields: ["comments"]
+default_incident:
+ assignment_group: "Development"
+`
+	defaultIncident := make(map[string]string)
+	defaultIncident["assignment_group"] = "Development"
+	expectedConfig := Config{
+		ServiceNow: ServiceNowConfig{
+			InstanceName: "instance",
+			UserName:     "SA",
+			Password:     "SA!",
+		},
+		Workflow: WorkflowConfig{
+			IncidentGroupKeyField: "u_other_reference_1",
+			NoUpdateStates:        []json.Number{"6", "7"},
+			IncidentUpdateFields:  []string{"comments"},
+		},
 		DefaultIncident: defaultIncident,
 	}
-	config, err := loadConfigContent([]byte(configFile))
+	loadedConfig, err := loadConfigContent([]byte(configFile))
 	if err != nil {
-		t.Errorf("Error parsing viable content %v", err)
+		t.Errorf("Error on loading config content %v", err)
 	}
-	if !reflect.DeepEqual(config, goodConfig) {
-		t.Errorf("Error in getting config Got:%v, Expected config:%v", goodConfig, config)
+	if !reflect.DeepEqual(loadedConfig, expectedConfig) {
+		t.Errorf("Error in getting config Got:%v, Expected config:%v", loadedConfig, expectedConfig)
 	}
 }
 
@@ -371,7 +408,19 @@ service_now:
 TOTO
 :tatata
 `
+	_, err := loadConfigContent([]byte(configFile))
+	if err == nil {
+		t.Errorf("Should have an error parsing unparseable content")
+	}
+}
 
+func TestLoadConfigContent_MissingField(t *testing.T) {
+	configFile := `
+service_now:
+ instance_name: "instance"
+ user_name: "SA"
+ password: "SA!" 
+`
 	_, err := loadConfigContent([]byte(configFile))
 	if err == nil {
 		t.Errorf("Should have an error parsing unparseable content")

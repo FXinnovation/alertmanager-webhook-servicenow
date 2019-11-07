@@ -59,6 +59,28 @@ type JSONResponse struct {
 	Message string
 }
 
+func (c Config) validate() error {
+	var errs strings.Builder
+
+	if len(c.ServiceNow.InstanceName) == 0 {
+		errs.WriteString("instance_name is missing\n")
+	}
+	if len(c.ServiceNow.UserName) == 0 {
+		errs.WriteString("user_name is missing\n")
+	}
+	if len(c.ServiceNow.Password) == 0 {
+		errs.WriteString("password is missing\n")
+	}
+	if len(c.Workflow.IncidentGroupKeyField) == 0 {
+		errs.WriteString("incident_group_key_field is missing\n")
+	}
+
+	if errs.Len() > 0 {
+		return errors.New("Config file is invalid\n" + errs.String())
+	}
+	return nil
+}
+
 func webhook(w http.ResponseWriter, r *http.Request) {
 
 	data, err := readRequestBody(r)
@@ -140,6 +162,11 @@ func loadConfigContent(configData []byte) (Config, error) {
 	errYAML := yaml.Unmarshal([]byte(configData), &config)
 	if errYAML != nil {
 		return config, errYAML
+	}
+
+	errConfig := config.validate()
+	if errConfig != nil {
+		return config, errConfig
 	}
 
 	// Load internal state from config
