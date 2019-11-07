@@ -7,6 +7,8 @@ A [Prometheus AlertManager](https://github.com/prometheus/alertmanager) webhook 
 ### ServiceNow authentication
 The supported authentication to ServiceNow is through a service account (basic authentication through HTTPS).
 
+Your ServiceNow service account must have permissions to read and update incidents.
+
 ### Creation of incident by alert group
 One incident is created per distinct group key — as defined by the [`group_by`](https://prometheus.io/docs/alerting/configuration/#<route>) parameter of Alertmanager's `route` configuration section. This avoid spamming ServiceNow with incidents when a huge system failure occurs, and still provide a very flexible mechanism to group alerts in one incident. The ServiceNow field used to hold the group key is configurable through the `incident_group_key_field` property and will contain a hash of the group key.
 
@@ -77,7 +79,9 @@ An example can be found in [config/servicenow_example.yml](https://github.com/FX
 
 ```
 service_now:
+  # The instance_name part (subdomain) of your ServiceNow URL (i.e: https://instance_name.service-now.com/)
   instance_name: "<instance name>"
+  # A user with permissions to read and update ServiceNow incidents
   user_name: "<user>"
   password: "<password>"
 

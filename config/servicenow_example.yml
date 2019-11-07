@@ -1,12 +1,14 @@
 service_now:
-  instance_name: "<instance name>"
-  user_name: "<user>"
-  password: "<password>"
+  # The instance_name part (subdomain) of your ServiceNow URL (i.e: https://instance_name.service-now.com/)
+  instance_name: "CHANGE_ME"
+  # A user with permissions to read and update ServiceNow incidents
+  user_name: "CHANGE_ME"
+  password: "CHANGE_ME"
 
 workflow:
   # Name of an existing ServiceNow table field that will be used as a key to uniquely reference an alert group in incident management workflow. 
   # This field must accept a minimum of 32 characters.
-  incident_group_key_field: "<incident table field>"
+  incident_group_key_field: "u_other_reference_1"
   # ID of the incident states for which existing incident will not be updated. 
   # For firing alert group, it will lead to the creation of a new incident.
   # For resolved alert group, no action will be taken.
