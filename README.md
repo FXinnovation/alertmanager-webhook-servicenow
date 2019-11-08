@@ -14,10 +14,10 @@ One incident is created per distinct group key — as defined by the [`group_by`
 
 ### Incident management workflow
 The supported incident workflow is the following:
-- Create a new incident if a firing alert group is currently not associated to an existing incident, or if an associated incident exists but is in a state where update is not allowed (this is configurable in the webhook, but will usually be `closed` or `resolved` state)
+- Create a new incident if a firing alert group is currently not associated to an existing incident, or if an associated incident exists but is in a state where update is not allowed (this is configurable in the webhook, but would usually be `resolved`, `closed` and `cancelled` states)
 - Update an existing incident if it is in a state where update is allowed (same configuration as above in the webhook). Incident fields to be updated is also configurable.
 
-Note that when an incident is updated, configured data fields are updated (description, comments, etc...), but incident state is not changed. In the future, an optional auto-resolve feature may be added to move an incident to `resolved` state when the alert group has a resolved status.
+Note that when an incident is updated, configured data fields are updated (e.g.: comments), but incident state is not changed. In the future, an optional auto-resolve feature may be added to move an incident to `resolved` state when the alert group has a resolved status.
 
 ## Planned features
 - Provide incident template configuration through a separate file
@@ -26,18 +26,38 @@ Note that when an incident is updated, configured data fields are updated (descr
 ## Getting Started
 
 ### Prerequisites
-To run this project, you will need a [working Go environment](https://golang.org/doc/install).
+To run this project from sources, you will need a [working Go environment](https://golang.org/doc/install).
 
 ### Installing
 ```bash
 go get -u github.com/FXinnovation/alertmanager-webhook-servicenow
 ```
 
+## Building
+Build the sources with 
+```bash
+make build
+```
+**Note**: As this is a Go build you can use _GOOS_ and _GOARCH_ environment variables to build for another platform.
+### Crossbuilding
+The _Makefile_ contains a _crossbuild_ target which builds all the platforms defined in _.promu.yml_ file and puts the files in _.build_ folder. Alternatively you can specify one platform to build with the OSARCH environment variable;
+```bash
+OSARCH=linux/amd64 make crossbuild
+```
+
+## Run the binary
+```bash
+./alertmanager-webhook-servicenow
+```
+By default, the webhook config is expected in `config/servicenow.yml` (see `Configuration`).
+
+Use `-h` flag to list available options.
+
 ## Testing
 This webhook expects a JSON object from Alertmanager. The format of this JSON is described in the [Alertmanager documentation](https://prometheus.io/docs/alerting/configuration/#<webhook_config>) or, alternatively, in the [Alertmanager GoDoc](https://godoc.org/github.com/prometheus/alertmanager/template#Data).
 
 ### Manual testing
-To quickly test if the webhook is working, you can start it locally (see `Usage`) and then run:
+To quickly test if the webhook is working, first start the binary (see `Run the binary`). You can then simulate the AlertManager request with cURL:
 
 ```bash
 curl -H "Content-type: application/json" -X POST \
@@ -45,59 +65,44 @@ curl -H "Content-type: application/json" -X POST \
   http://localhost:9877/webhook
 ```
 
+The first time this command is run, it will create an incident in ServiceNow.
+
 ### Running unit tests
 ```bash
 make test
 ```
 
-## Usage
-```bash
-./alertmanager-webhook-servicenow -h
-```
-## Building
-Build the sources with 
-```bash
-make build
-```
-**Note**: As this is a go build you can use _GOOS_ and _GOARCH_ environment variables to build for another platform.
-### Crossbuilding
-The _Makefile_ contains a _crossbuild_ target which builds all the platforms defined in _.promu.yml_ file and puts the files in _.build_ folder. Alternatively you can specify one platform to build with the OSARCH environment variable;
-```bash
-OSARCH=linux/amd64 make crossbuild
-```
-## Deployment
-The webhook listen on port 9877 by default.
+## Configuration
 
 ### alertmanager-webhook-servicenow config
-The webhook config is done in `config/servicenow.yml`.
+Configuration is usually done in `config/servicenow.yml`.
 
-All `default_incident` properties supports Go templating with structure defined in [AlertManager documentation](https://prometheus.io/docs/alerting/notifications/#data).
+All `default_incident` properties supports Go templating with the structure defined in [AlertManager documentation](https://prometheus.io/docs/alerting/notifications/#data).
 
-Every key value pair in `default_incident` is sent as an incident field, even for those not listed in the example below.
-
-An example can be found in [config/servicenow_example.yml](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/config/servicenow_example.yml)
+An example can be found in [config/servicenow_example.yml](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/config/servicenow_example.yml). Here is the config detailed description:
 
 ```
 service_now:
-  # The instance_name part (subdomain) of your ServiceNow URL (i.e: https://instance_name.service-now.com/)
+  # Mandatory. The instance_name part (subdomain) of your ServiceNow URL (i.e: https://instance_name.service-now.com/)
   instance_name: "<instance name>"
-  # A user with permissions to read and update ServiceNow incidents
+  # Mandatory. A user with permissions to read and update ServiceNow incidents.
   user_name: "<user>"
   password: "<password>"
 
 workflow:
-  # Name of an existing ServiceNow table field that will be used as a key to uniquely reference an alert group in incident management workflow. 
-  # This field must accept a minimum of 32 characters.
+  # Mandatory. Name of an existing ServiceNow incident field that will be used to hold the hashed key that uniquely reference an alert group in the incident management workflow.
+  # This field must accept a minimum of 32 characters. A standard approach would be to add a custom field to your incident table (e.g.: u_prometheus_alertgroup_id), and reference it here.
   incident_group_key_field: "<incident table field>"
-  # ID of the incident states for which existing incident will not be updated. 
-  # For firing alert group, it will lead to the creation of a new incident.
-  # For resolved alert group, no action will be taken.
-  no_update_states: [6,7]
-  # Name of the incident fields that should be set when an existing incident is updated
-  incident_update_fields:
-    - "comments"
+  # Optional. List of the incident states ID for which existing incident will not be updated. 
+  # Then the update comes from a firing alert group, it will lead to the creation of a new incident, for resolved alert group, no action will be taken.
+  # Usual states configuration would be: resolved, closed and cancelled (e.g. : [6,7,8])
+  no_update_states: [6,7,8]
+  # Optional. List of incident fields that will be send to ServiceNow when an existing incident is updated
+  # A usual field to set on update would be "comments"
+  incident_update_fields: ["comments"]
 
-# All incidents fields configuration supports Go templating
+# All incident fields are optional. The following list is not exhaustive and is provided as an example. Any other existing ServiceNow incident fields are dynamically supported by the webhook, and can be added here
+# All incident fields values supports Go templating
 default_incident:
   # Sysid or name of the assignment group
   assignment_group: "<assignment group>"
