@@ -75,9 +75,9 @@ func TestWebhookHandler_Firing_DoNotExists_OK(t *testing.T) {
 		t.Errorf("Wrong status code: got %v, want %v", status, http.StatusOK)
 	}
 
-	expected := `{"Status":200,"Message":"Success"}`
-	if rr.Body.String() != expected {
-		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), expected)
+	want := `{"Status":200,"Message":"Success"}`
+	if rr.Body.String() != want {
+		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), want)
 	}
 }
 
@@ -109,9 +109,9 @@ func TestWebhookHandler_Firing_Exists_Create_OK(t *testing.T) {
 		t.Errorf("Wrong status code: got %v, want %v", status, http.StatusOK)
 	}
 
-	expected := `{"Status":200,"Message":"Success"}`
-	if rr.Body.String() != expected {
-		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), expected)
+	want := `{"Status":200,"Message":"Success"}`
+	if rr.Body.String() != want {
+		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), want)
 	}
 }
 
@@ -151,9 +151,9 @@ func TestWebhookHandler_Firing_Exists_Update_OK(t *testing.T) {
 		t.Errorf("Wrong status code: got %v, want %v", status, http.StatusOK)
 	}
 
-	expected := `{"Status":200,"Message":"Success"}`
-	if rr.Body.String() != expected {
-		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), expected)
+	want := `{"Status":200,"Message":"Success"}`
+	if rr.Body.String() != want {
+		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), want)
 	}
 }
 
@@ -185,9 +185,9 @@ func TestWebhookHandler_Resolved_DoNotExists_OK(t *testing.T) {
 		t.Errorf("Wrong status code: got %v, want %v", status, http.StatusOK)
 	}
 
-	expected := `{"Status":200,"Message":"Success"}`
-	if rr.Body.String() != expected {
-		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), expected)
+	want := `{"Status":200,"Message":"Success"}`
+	if rr.Body.String() != want {
+		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), want)
 	}
 }
 
@@ -219,9 +219,9 @@ func TestWebhookHandler_Resolved_Exists_OK(t *testing.T) {
 		t.Errorf("Wrong status code: got %v, want %v", status, http.StatusOK)
 	}
 
-	expected := `{"Status":200,"Message":"Success"}`
-	if rr.Body.String() != expected {
-		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), expected)
+	want := `{"Status":200,"Message":"Success"}`
+	if rr.Body.String() != want {
+		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), want)
 	}
 }
 
@@ -242,9 +242,9 @@ func TestWebhookHandler_BadRequest(t *testing.T) {
 		t.Errorf("Wrong status code: got %v, want %v", status, http.StatusBadRequest)
 	}
 
-	expected := `{"Status":400,"Message":"EOF"}`
-	if rr.Body.String() != expected {
-		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), expected)
+	want := `{"Status":400,"Message":"EOF"}`
+	if rr.Body.String() != want {
+		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), want)
 	}
 }
 
@@ -276,22 +276,22 @@ func TestWebhookHandler_InternalServerError(t *testing.T) {
 	}
 
 	// Check the response body
-	expected := `{"Status":500,"Message":"Error"}`
-	if rr.Body.String() != expected {
-		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), expected)
+	want := `{"Status":500,"Message":"Error"}`
+	if rr.Body.String() != want {
+		t.Errorf("Unexpected body: got %v, want %v", rr.Body.String(), want)
 	}
 }
 
 func TestApplyTemplate_emptyText(t *testing.T) {
 	data := template.Data{}
 	text := ""
-	result, err := applyTemplate("name", text, data)
+	got, err := applyTemplate("name", text, data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := ""
-	if result != expected {
-		t.Errorf("Unexpected result: got %v, want %v", result, expected)
+	want := ""
+	if got != want {
+		t.Errorf("Unexpected result: got %v, want %v", got, want)
 	}
 }
 
@@ -303,13 +303,13 @@ func TestApplyTemplate_OK(t *testing.T) {
 		},
 	}
 	text := "Status is {{.Status}} and error is {{.CommonAnnotations.error}}"
-	result, err := applyTemplate("name", text, data)
+	got, err := applyTemplate("name", text, data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := "Status is firing and error is my error"
-	if string(result) != expected {
-		t.Errorf("Unexpected result: got %v, want %v", result, expected)
+	want := "Status is firing and error is my error"
+	if string(got) != want {
+		t.Errorf("Unexpected result: got %v, want %v", got, want)
 	}
 }
 
@@ -325,11 +325,11 @@ func TestApplyIncidentTemplate_Range(t *testing.T) {
 	}
 	applyIncidentTemplate(incident, data)
 
-	result := incident["description"]
-	expected := "error:a warning:b "
+	got := incident["description"]
+	want := "error:a warning:b "
 
-	if result != expected {
-		t.Errorf("Unexpected result: got %v, want %v", result, expected)
+	if got != want {
+		t.Errorf("Unexpected result: got %v, want %v", got, want)
 	}
 }
 
@@ -342,7 +342,7 @@ service_now:
 workflow:
  incident_group_key_field: "u_other_reference_1"
 `
-	expectedConfig := Config{
+	want := Config{
 		ServiceNow: ServiceNowConfig{
 			InstanceName: "instance",
 			UserName:     "SA",
@@ -353,12 +353,12 @@ workflow:
 		},
 		DefaultIncident: nil,
 	}
-	loadedConfig, err := loadConfigContent([]byte(configFile))
+	got, err := loadConfigContent([]byte(configFile))
 	if err != nil {
 		t.Errorf("Error on loading config content %v", err)
 	}
-	if !reflect.DeepEqual(loadedConfig, expectedConfig) {
-		t.Errorf("Error in getting config Got:%v, Expected config:%v", loadedConfig, expectedConfig)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Error in getting config Got:%v, Expected config:%v", got, want)
 	}
 }
 
@@ -377,7 +377,7 @@ default_incident:
 `
 	defaultIncident := make(map[string]string)
 	defaultIncident["assignment_group"] = "Development"
-	expectedConfig := Config{
+	want := Config{
 		ServiceNow: ServiceNowConfig{
 			InstanceName: "instance",
 			UserName:     "SA",
@@ -390,12 +390,12 @@ default_incident:
 		},
 		DefaultIncident: defaultIncident,
 	}
-	loadedConfig, err := loadConfigContent([]byte(configFile))
+	got, err := loadConfigContent([]byte(configFile))
 	if err != nil {
 		t.Errorf("Error on loading config content %v", err)
 	}
-	if !reflect.DeepEqual(loadedConfig, expectedConfig) {
-		t.Errorf("Error in getting config Got:%v, Expected config:%v", loadedConfig, expectedConfig)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Error in getting config Got:%v, Expected config:%v", got, want)
 	}
 }
 
