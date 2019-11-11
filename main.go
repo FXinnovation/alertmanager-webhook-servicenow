@@ -159,14 +159,16 @@ func readRequestBody(r *http.Request) (template.Data, error) {
 
 func loadConfigContent(configData []byte) (Config, error) {
 	config = Config{}
-	errYAML := yaml.Unmarshal([]byte(configData), &config)
-	if errYAML != nil {
-		return config, errYAML
+	var err error
+
+	err = yaml.Unmarshal([]byte(configData), &config)
+	if err != nil {
+		return config, err
 	}
 
-	errConfig := config.validate()
-	if errConfig != nil {
-		return config, errConfig
+	err = config.validate()
+	if err != nil {
+		return config, err
 	}
 
 	// Load internal state from config
