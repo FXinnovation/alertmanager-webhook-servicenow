@@ -3,11 +3,13 @@
 
 A [Prometheus AlertManager](https://github.com/prometheus/alertmanager) webhook receiver that manages [ServiceNow](https://www.servicenow.com) incidents from alerts, written in Go.
 
+## ServiceNow Prerequisites
+- A service account with permissions to read and update incidents.
+- An available incident table field (minimum of 32 characters) that will be dedicated to hold the webhook alert group ID
+
 ## Current features
 ### ServiceNow authentication
 The supported authentication to ServiceNow is through a service account (basic authentication through HTTPS).
-
-Your ServiceNow service account must have permissions to read and update incidents.
 
 ### Creation of incident by alert group
 One incident is created per distinct group key — as defined by the [`group_by`](https://prometheus.io/docs/alerting/configuration/#<route>) parameter of Alertmanager's `route` configuration section. This avoid spamming ServiceNow with incidents when a huge system failure occurs, and still provide a very flexible mechanism to group alerts in one incident. The ServiceNow field used to hold the group key is configurable through the `incident_group_key_field` property and will contain a hash of the group key.
@@ -65,7 +67,7 @@ curl -H "Content-type: application/json" -X POST \
   http://localhost:9877/webhook
 ```
 
-The first time this command is run, it will create an incident in ServiceNow.
+The first time this command is run, it will create an incident in ServiceNow. Any additionnal run of this command (with the same `groupLabels`) will update the existing incident.
 
 ### Running unit tests
 ```bash
@@ -94,10 +96,10 @@ workflow:
   # This field must accept a minimum of 32 characters. A standard approach would be to add a custom field to your incident table (e.g.: u_prometheus_alertgroup_id), and reference it here.
   incident_group_key_field: "<incident table field>"
   # Optional. List of the incident states ID for which existing incident will not be updated. 
-  # Then the update comes from a firing alert group, it will lead to the creation of a new incident, for resolved alert group, no action will be taken.
+  # When the update comes from a firing alert group, it will lead to the creation of a new incident, for resolved alert group, no action will be taken.
   # Usual states configuration would be: resolved, closed and cancelled (e.g. : [6,7,8])
   no_update_states: [6,7,8]
-  # Optional. List of incident fields that will be send to ServiceNow when an existing incident is updated
+  # Optional. List of incident fields that will be sent to ServiceNow when an existing incident is updated
   # A usual field to set on update would be "comments"
   incident_update_fields: ["comments"]
 
