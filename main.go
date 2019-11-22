@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -166,6 +167,8 @@ func loadConfigContent(configData []byte) (Config, error) {
 		return config, err
 	}
 
+	loadEnvVars(&config)
+
 	err = config.validate()
 	if err != nil {
 		return config, err
@@ -194,6 +197,21 @@ func loadConfig(configFile string) (Config, error) {
 	}
 
 	return loadConfigContent(configData)
+}
+
+func loadEnvVars(c *Config) {
+	if instanceName, ok := os.LookupEnv("SERVICENOW_INSTANCE_NAME"); ok {
+		(*c).ServiceNow.InstanceName = instanceName
+	}
+	if userName, ok := os.LookupEnv("SERVICENOW_USERNAME"); ok {
+		(*c).ServiceNow.UserName = userName
+	}
+	if password, ok := os.LookupEnv("SERVICENOW_PASSWORD"); ok {
+		(*c).ServiceNow.Password = password
+	}
+	if incidentField, ok := os.LookupEnv("SERVICENOW_INCIDENT_FIELD"); ok {
+		(*c).Workflow.IncidentGroupKeyField = incidentField
+	}
 }
 
 func loadSnClient() (ServiceNow, error) {
