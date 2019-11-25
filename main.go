@@ -209,7 +209,7 @@ func loadEnvVars(c *Config) {
 	if password, ok := os.LookupEnv("SERVICENOW_PASSWORD"); ok {
 		(*c).ServiceNow.Password = password
 	}
-	if incidentField, ok := os.LookupEnv("SERVICENOW_INCIDENT_FIELD"); ok {
+	if incidentField, ok := os.LookupEnv("SERVICENOW_INCIDENT_GROUP_KEY_FIELD"); ok {
 		(*c).Workflow.IncidentGroupKeyField = incidentField
 	}
 }
