@@ -1,65 +1,115 @@
 # alertmanager-webhook-servicenow
-[![Build Status](https://travis-ci.org/FXinnovation/alertmanager-webhook-servicenow.svg?branch=master)](https://travis-ci.org/FXinnovation/alertmanager-webhook-servicenow)
 
-A [Prometheus AlertManager](https://github.com/prometheus/alertmanager) webhook receiver that manages [ServiceNow](https://www.servicenow.com) incidents from alerts, written in Go.
+[![Build
+Status](https://travis-ci.org/FXinnovation/alertmanager-webhook-servicenow.svg?branch=master)](https://travis-ci.org/FXinnovation/alertmanager-webhook-servicenow)
+
+A [Prometheus AlertManager](https://github.com/prometheus/alertmanager) webhook
+receiver that manages [ServiceNow](https://www.servicenow.com) incidents from
+alerts, written in Go.
 
 ## ServiceNow Prerequisites
+
 - A service account with permissions to read and update incidents.
-- An available incident table field (minimum of 32 characters) that will be dedicated to hold the webhook alert group ID
+- An available incident table field (minimum of 32 characters) that will be
+  dedicated to hold the webhook alert group ID
 
 ## Current features
+
 ### ServiceNow authentication
-The supported authentication to ServiceNow is through a service account (basic authentication through HTTPS).
+
+The supported authentication to ServiceNow is through a service account (basic
+authentication through HTTPS).
 
 ### Creation of incident by alert group
-One incident is created per distinct group key — as defined by the [`group_by`](https://prometheus.io/docs/alerting/configuration/#<route>) parameter of Alertmanager's `route` configuration section. This avoid spamming ServiceNow with incidents when a huge system failure occurs, and still provide a very flexible mechanism to group alerts in one incident. The ServiceNow field used to hold the group key is configurable through the `incident_group_key_field` property and will contain a hash of the group key.
+
+One incident is created per distinct group key — as defined by the
+[`group_by`](https://prometheus.io/docs/alerting/configuration/#<route>)
+parameter of Alertmanager's `route` configuration section. This avoid spamming
+ServiceNow with incidents when a huge system failure occurs, and still provide a
+very flexible mechanism to group alerts in one incident. The ServiceNow field
+used to hold the group key is configurable through the
+`incident_group_key_field` property and will contain a hash of the group key.
 
 ### Incident management workflow
-The supported incident workflow is the following:
-- Create a new incident if a firing alert group is currently not associated to an existing incident, or if an associated incident exists but is in a state where update is not allowed (this is configurable in the webhook, but would usually be `resolved`, `closed` and `cancelled` states)
-- Update an existing incident if it is in a state where update is allowed (same configuration as above in the webhook). Incident fields to be updated is also configurable.
 
-Note that when an incident is updated, configured data fields are updated (e.g.: comments), but incident state is not changed. In the future, an optional auto-resolve feature may be added to move an incident to `resolved` state when the alert group has a resolved status.
+The supported incident workflow is the following:
+
+- Create a new incident if a firing alert group is currently not associated to
+  an existing incident, or if an associated incident exists but is in a state
+  where update is not allowed (this is configurable in the webhook, but would
+  usually be `resolved`, `closed` and `cancelled` states)
+- Update an existing incident if it is in a state where update is allowed (same
+  configuration as above in the webhook). Incident fields to be updated is also
+  configurable.
+
+Note that when an incident is updated, configured data fields are updated (e.g.:
+comments), but incident state is not changed. In the future, an optional
+auto-resolve feature may be added to move an incident to `resolved` state when
+the alert group has a resolved status.
 
 ## Planned features
+
 - Provide incident template configuration through a separate file
 - Support multiple incident configuration templates
 
 ## Getting Started
 
 ### Prerequisites
-To run this project from sources, you will need a [working Go environment](https://golang.org/doc/install).
+
+To run this project from sources, you will need a [working Go
+environment](https://golang.org/doc/install).
 
 ### Installing
+
 ```bash
 go get -u github.com/FXinnovation/alertmanager-webhook-servicenow
 ```
 
 ## Building
-Build the sources with 
+
+Build the sources with
+
 ```bash
 make build
 ```
-**Note**: As this is a Go build you can use _GOOS_ and _GOARCH_ environment variables to build for another platform.
+
+**Note**: As this is a Go build you can use _GOOS_ and _GOARCH_ environment
+variables to build for another platform.
+
 ### Crossbuilding
-The _Makefile_ contains a _crossbuild_ target which builds all the platforms defined in _.promu.yml_ file and puts the files in _.build_ folder. Alternatively you can specify one platform to build with the OSARCH environment variable;
+
+The _Makefile_ contains a _crossbuild_ target which builds all the platforms
+defined in _.promu.yml_ file and puts the files in _.build_ folder.
+Alternatively you can specify one platform to build with the OSARCH environment
+variable;
+
 ```bash
 OSARCH=linux/amd64 make crossbuild
 ```
 
 ## Run the binary
+
 ```bash
 ./alertmanager-webhook-servicenow
 ```
-By default, the webhook config is expected in `config/servicenow.yml` (see `Configuration`).
+
+By default, the webhook config is expected in `config/servicenow.yml` (see
+[Configuration](#configuration)).
 
 Use `-h` flag to list available options.
 
 ## Testing
-This webhook expects a JSON object from Alertmanager. The format of this JSON is described in the [Alertmanager documentation](https://prometheus.io/docs/alerting/configuration/#<webhook_config>) or, alternatively, in the [Alertmanager GoDoc](https://godoc.org/github.com/prometheus/alertmanager/template#Data).
+
+This webhook expects a JSON object from Alertmanager. The format of this JSON is
+described in the [Alertmanager
+documentation](https://prometheus.io/docs/alerting/configuration/#<webhook_config>)
+or, alternatively, in the [Alertmanager
+GoDoc](https://godoc.org/github.com/prometheus/alertmanager/template#Data).
 
 ### Manual testing
-To quickly test if the webhook is working, first start the binary (see `Run the binary`). You can then simulate the AlertManager request with cURL:
+
+To quickly test if the webhook is working, first start the binary (see `Run the
+binary`). You can then simulate the AlertManager request with cURL:
 
 ```bash
 curl -H "Content-type: application/json" -X POST \
@@ -67,9 +117,12 @@ curl -H "Content-type: application/json" -X POST \
   http://localhost:9877/webhook
 ```
 
-The first time this command is run, it will create an incident in ServiceNow. Any additionnal run of this command (with the same `groupLabels`) will update the existing incident.
+The first time this command is run, it will create an incident in ServiceNow.
+Any additionnal run of this command (with the same `groupLabels`) will update
+the existing incident.
 
 ### Running unit tests
+
 ```bash
 make test
 ```
@@ -77,13 +130,18 @@ make test
 ## Configuration
 
 ### alertmanager-webhook-servicenow config
+
 Configuration is usually done in `config/servicenow.yml`.
 
-All `default_incident` properties supports Go templating with the structure defined in [AlertManager documentation](https://prometheus.io/docs/alerting/notifications/#data).
+All `default_incident` properties supports Go templating with the structure
+defined in [AlertManager
+documentation](https://prometheus.io/docs/alerting/notifications/#data).
 
-An example can be found in [config/servicenow_example.yml](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/config/servicenow_example.yml). Here is the config detailed description:
+An example can be found in
+[config/servicenow_example.yml](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/config/servicenow_example.yml).
+Here is the config detailed description:
 
-```
+```yaml
 service_now:
   # Mandatory. The instance_name part (subdomain) of your ServiceNow URL (i.e: https://instance_name.service-now.com/)
   instance_name: "<instance name>"
@@ -133,9 +191,11 @@ default_incident:
 ```
 
 ### AlertManager config
-In the AlertManager config (e.g., alertmanager.yml), a `webhook_configs` target the webhook URL, e.g.:
 
-```
+In the AlertManager config (e.g., alertmanager.yml), a `webhook_configs` target
+the webhook URL, e.g.:
+
+```yaml
 global:
   resolve_timeout: 5m
 
@@ -153,21 +213,48 @@ receivers:
     send_resolved: true
 ```
 
-
 ## Docker image
+
 You can build a docker image using:
+
 ```bash
 make docker
 ```
-The resulting image is named `fxinnovation/alertmanager-webhook-servicenow:{git-branch}`.
-It exposes port 9877 and expects the config in /config/servicenow.yml. To configure it, you can bind-mount a config from your host: 
 
+The resulting image is named
+`fxinnovation/alertmanager-webhook-servicenow:{git-branch}`. It exposes port
+9877 and expects the config in `/config/servicenow.yml`. By default,
+[servicenow_example.yml](config/servicenow_example.yml) will be placed at
+`/config/servicenow.yml`, but it can be overridden by bind-mounting your own
+config as shown:
+
+```bash
+docker run -p 9877 -v /path/on/host/config/servicenow.yml:/config/servicenow.yml fxinnovation/alertmanager-webhook-servicenow:master
 ```
-$ docker run -p 9877 -v /path/on/host/config/servicenow.yml:/config/servicenow.yml fxinnovation/alertmanager-webhook-servicenow:master
+
+The image also accepts environment variables to configure the ServiceNow
+connection. If they are present, they will take precedence over the
+corresponding variables in the `servicenow.yml` config file:
+
+| Environment Variable                | Corresponding Config Variable                    |
+| ----------------------------------- | ------------------------------------------------ |
+| SERVICENOW_INSTANCE_NAME            | service_now.instance_name                        |
+| SERVICENOW_USERNAME                 | service_now.user_name                            |
+| SERVICENOW_PASSWORD                 | service_now.password                             |
+| SERVICENOW_INCIDENT_GROUP_KEY_FIELD | workflow.incident_group_key_field                |
+
+Example with environment variables:
+
+```bash
+docker run -p 9877 -e SERVICENOW_USERNAME="snow_user" -e SERVICENOW_PASSWORD="snow_password" fxinnovation/alertmanager-webhook-servicenow:master
 ```
 
 ## Contributing
-Refer to [CONTRIBUTING.md](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/CONTRIBUTING.md).
+
+Refer to
+[CONTRIBUTING.md](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/CONTRIBUTING.md).
 
 ## License
-Apache License 2.0, see [LICENSE](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/LICENSE).
+
+Apache License 2.0, see
+[LICENSE](https://github.com/FXinnovation/alertmanager-webhook-servicenow/blob/master/LICENSE).
