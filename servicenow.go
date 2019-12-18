@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	serviceNowBaseURL = "https://%s.service-now.com"
-	tableAPI          = "%s/api/now/v2/table/%s"
+	serviceNowBaseURL   = "https://%s.service-now.com"
+	tableAPI            = "%s/api/now/v2/table/%s"
+	hibernatingInstance = "Hibernating Instance"
 )
 
 // Incident is a model of the ServiceNow incident table
@@ -159,7 +160,7 @@ func (snClient *ServiceNowClient) doRequest(req *http.Request) ([]byte, error) {
 	}
 
 	if !json.Valid(responseBody) {
-		if strings.Contains(string(responseBody), "Hibernating Instance") {
+		if strings.Contains(string(responseBody), hibernatingInstance) {
 			return nil, errors.New("ServiceNow is in sleeping mode and is unavailable (Hibernating Instance)")
 		}
 		return nil, errors.New("ServiceNow is unavailable (API return format is not valid JSON)")
