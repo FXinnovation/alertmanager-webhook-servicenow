@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/prometheus/common/log"
 )
@@ -155,6 +156,13 @@ func (snClient *ServiceNowClient) doRequest(req *http.Request) ([]byte, error) {
 	if err != nil {
 		log.Errorf("Error reading the body. %s", err)
 		return nil, err
+	}
+
+	if !json.Valid(responseBody) {
+		if strings.Contains(string(responseBody), "Hibernating Instance") {
+			return nil, errors.New("ServiceNow is in sleeping mode and is unavailable (Hibernating Instance)")
+		}
+		return nil, errors.New("ServiceNow is unavailable (API return format is not valid JSON)")
 	}
 
 	return responseBody, nil

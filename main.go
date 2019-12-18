@@ -233,14 +233,13 @@ func onAlertGroup(data template.Data) error {
 	}
 
 	existingIncidents, err := serviceNow.GetIncidents(getParams)
+	if err != nil {
+		return err
+	}
 	log.Infof("Found %v existing incident(s) for alert group key: %s.", len(existingIncidents), getGroupKey(data))
 
 	updatableIncidents := filterUpdatableIncidents(existingIncidents)
 	log.Infof("Found %v updatable incident(s) for alert group key: %s.", len(updatableIncidents), getGroupKey(data))
-
-	if err != nil {
-		return err
-	}
 
 	var updatableIncident Incident
 	if len(updatableIncidents) > 0 {
