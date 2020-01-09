@@ -1,0 +1,26 @@
+#!/bin/sh
+set -ex
+
+apt-get update
+apt-get install --yes \
+  ca-certificates \
+  curl
+
+# Install alertmanager-webhook-servicenow
+useradd -r -d /opt/alertmanager-webhook-servicenow aws
+
+mkdir -p /opt/alertmanager-webhook-servicenow
+mv /alertmanager-webhook-servicenow /opt/alertmanager-webhook-servicenow
+
+chown -R aws /opt/alertmanager-webhook-servicenow
+chown aws /config/servicenow.yml
+
+# Clean
+apt-get remove --purge curl --yes
+apt-get autoremove --purge --yes
+apt-get clean --yes
+
+# CIS Benchmarking
+sed -i 's/^PASS_MAX_DAYS.*$/PASS_MAX_DAYS   60/g' /etc/login.defs
+sed -i 's/^PASS_MIN_DAYS.*$/PASS_MIN_DAYS   7/g' /etc/login.defs
+sed -i 's/^UMASK.*$/UMASK   027/g' /etc/login.defs

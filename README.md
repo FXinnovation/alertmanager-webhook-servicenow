@@ -215,21 +215,25 @@ receivers:
 
 ## Docker image
 
-You can build a docker image using:
+You can run images published in [dockerhub](https://hub.docker.com/r/fxinnovation/alertmanager-webhook-servicenow).
+
+You can also build a docker image using:
 
 ```bash
 make docker
 ```
 
 The resulting image is named
-`fxinnovation/alertmanager-webhook-servicenow:{git-branch}`. It exposes port
+`fxinnovation/alertmanager-webhook-servicenow:{git-branch}`.
+
+The image exposes port
 9877 and expects the config in `/config/servicenow.yml`. By default,
 [servicenow_example.yml](config/servicenow_example.yml) will be placed at
 `/config/servicenow.yml`, but it can be overridden by bind-mounting your own
 config as shown:
 
 ```bash
-docker run -p 9877 -v /path/on/host/config/servicenow.yml:/config/servicenow.yml fxinnovation/alertmanager-webhook-servicenow:master
+docker run -p 9877:9877 -v /path/on/host/config/servicenow.yml:/config/servicenow.yml fxinnovation/alertmanager-webhook-servicenow:master
 ```
 
 The image also accepts environment variables to configure the ServiceNow
@@ -246,7 +250,7 @@ corresponding variables in the `servicenow.yml` config file:
 Example with environment variables:
 
 ```bash
-docker run -p 9877 -e SERVICENOW_USERNAME="snow_user" -e SERVICENOW_PASSWORD="snow_password" fxinnovation/alertmanager-webhook-servicenow:master
+docker run -p 9877:9877 -e SERVICENOW_USERNAME="snow_user" -e SERVICENOW_PASSWORD="snow_password" fxinnovation/alertmanager-webhook-servicenow:master
 ```
 
 ## Contributing
