@@ -70,8 +70,6 @@ release-tag: ## create a release tag
 		git tag $(VERSION) && git push -u origin $(VERSION);\
 	fi
 
-release-version: release-tag release-docker ## tag the version with VERSION
-
 crossbuild: ## creates a crossbuild in .build folder for either all the supported platforms or the one passed as OSARCH var
 	@if [ -n "$(OSARCH)" ]; then \
 		echo ">> Building $(OSARCH)";\
@@ -80,7 +78,3 @@ crossbuild: ## creates a crossbuild in .build folder for either all the supporte
 		echo ">> Building all platforms";\
 		$(PROMU) crossbuild;\
 	fi
-
-release-docker: ## pushes the VERSION tag to docker hub
-	@docker build -t "$(DOCKER_REPO)/$(DOCKER_IMAGE_NAME):$(VERSION)" .
-	@docker push $(DOCKER_REPO)/$(DOCKER_IMAGE_NAME):$(VERSION)
