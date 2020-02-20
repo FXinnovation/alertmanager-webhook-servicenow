@@ -103,9 +103,20 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 	sendJSONResponse(w, http.StatusOK, "Success")
 }
 
-// Starts 2 listeners
-// - first one to give a status on the receiver itself
-// - second one to actually process the data
+func homepage(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(`<html>
+	<head><title>alertmanager-webhook-servicenow</title></head>
+	<body>
+	<h1>alertmanager-webhook-servicenow</h1>
+	<p><a href="/metrics">Metrics</a></p>
+	</body>
+	</html>`))
+}
+
+// Starts the following http handler:
+// - basic home page on /
+// - Alertmanager webhook entry point on /webhook
+// - health metrics on /metrics
 func main() {
 	kingpin.Version(version.Print("alertmanager-webhook-servicenow"))
 	kingpin.HelpFlag.Short('h')
@@ -124,6 +135,7 @@ func main() {
 	log.Info("Starting webhook", version.Info())
 	log.Info("Build context", version.BuildContext())
 
+	http.HandleFunc("/", homepage)
 	http.HandleFunc("/webhook", webhook)
 	http.Handle("/metrics", promhttp.Handler())
 
