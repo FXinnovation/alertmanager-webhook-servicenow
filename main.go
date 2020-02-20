@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/prometheus/alertmanager/template"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
 
@@ -58,6 +59,10 @@ type WorkflowConfig struct {
 type JSONResponse struct {
 	Status  int
 	Message string
+}
+
+func init() {
+	prometheus.MustRegister(version.NewCollector("alertmanager_webhook_servicenow"))
 }
 
 func (c Config) validate() error {
