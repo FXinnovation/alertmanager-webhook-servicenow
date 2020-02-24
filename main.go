@@ -13,6 +13,7 @@ import (
 
 	"github.com/prometheus/alertmanager/template"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
 
@@ -32,6 +33,50 @@ var (
 	serviceNow           ServiceNow
 	noUpdateStates       map[json.Number]bool
 	incidentUpdateFields map[string]bool
+
+	webhookRequests = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "webhook_requests_total",
+			Help: "Total number of HTTP requests on /webhook.",
+		},
+		[]string{"code"},
+	)
+
+	webhookLastRequest = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "webhook_last_request_time_seconds",
+			Help: "Number of seconds since 1970 of the last HTTP request on /webhook.",
+		},
+	)
+
+	webhookIncidentValidationError = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "webhook_incident_validation_errors_total",
+			Help: "Total number of incident validation errors.",
+		},
+	)
+
+	webhookIncidentTemplateError = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "webhook_incident_template_errors_total",
+			Help: "Total number of incident template errors.",
+		},
+	)
+
+	serviceNowRequests = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "servicenow_requests_total",
+			Help: "Total number of HTTP requests to ServiceNow instance.",
+		},
+		[]string{"host", "method", "code"},
+	)
+
+	serviceNowLastRequest = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "servicenow_last_request_time_seconds",
+			Help: "Number of seconds since 1970 of the last HTTP request to ServiceNow instance.",
+		},
+	)
 )
 
 // Config - ServiceNow webhook configuration
@@ -149,6 +194,9 @@ func main() {
 }
 
 func sendJSONResponse(w http.ResponseWriter, status int, message string) {
+	webhookRequests.WithLabelValues(strconv.Itoa(status)).Inc()
+	webhookLastRequest.SetToCurrentTime()
+
 	data := JSONResponse{
 		Status:  status,
 		Message: message,
@@ -333,6 +381,7 @@ func alertGroupToIncident(data template.Data) (Incident, error) {
 	applyIncidentTemplate(incident, data)
 	err := validateIncident(incident)
 	if err != nil {
+		webhookIncidentValidationError.Inc()
 		log.Error(err)
 	}
 	return incident, nil
@@ -368,6 +417,7 @@ func applyIncidentTemplate(incident Incident, data template.Data) {
 		var err error
 		incident[key], err = applyTemplate(key, val.(string), data)
 		if err != nil {
+			webhookIncidentTemplateError.Inc()
 			log.Errorf("Error parsing default incident template for key:%s value:%s, error:%v", key, val.(string), err)
 		}
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/prometheus/common/log"
@@ -141,10 +142,15 @@ func (snClient *ServiceNowClient) doRequest(req *http.Request) ([]byte, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", snClient.authHeader)
 	resp, err := snClient.client.Do(req)
+
 	if err != nil {
 		log.Errorf("Error sending the request. %s", err)
 		return nil, err
 	}
+
+	serviceNowRequests.WithLabelValues(req.URL.Host, req.Method, strconv.Itoa(resp.StatusCode)).Inc()
+	serviceNowLastRequest.SetToCurrentTime()
+
 	if resp.StatusCode >= 400 {
 		errorMsg := fmt.Sprintf("ServiceNow returned the HTTP error code: %v", resp.StatusCode)
 		log.Error(errorMsg)
