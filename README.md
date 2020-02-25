@@ -1,8 +1,5 @@
 # alertmanager-webhook-servicenow
 
-[![Build
-Status](https://travis-ci.org/FXinnovation/alertmanager-webhook-servicenow.svg?branch=master)](https://travis-ci.org/FXinnovation/alertmanager-webhook-servicenow)
-
 A [Prometheus AlertManager](https://github.com/prometheus/alertmanager) webhook
 receiver that manages [ServiceNow](https://www.servicenow.com) incidents from
 alerts, written in Go.
