@@ -1,11 +1,11 @@
 FROM golang:1.12 as builder
-WORKDIR /go/src/github.com/FXinnovation/alertmanager-webhook-servicenow
+WORKDIR /alertmanager-webhook-servicenow/
 COPY . .
-RUN make
+RUN make getpromu test build
 
 FROM ubuntu:18.04
-COPY --from=builder /go/src/github.com/FXinnovation/alertmanager-webhook-servicenow/alertmanager-webhook-servicenow /alertmanager-webhook-servicenow
-COPY --from=builder /go/src/github.com/FXinnovation/alertmanager-webhook-servicenow/config/servicenow_example.yml /config/servicenow.yml
+COPY --from=builder /alertmanager-webhook-servicenow/alertmanager-webhook-servicenow /alertmanager-webhook-servicenow
+COPY --from=builder /alertmanager-webhook-servicenow/config/servicenow_example.yml /config/servicenow.yml
 ADD ./resources /resources
 RUN /resources/build && rm -rf /resources
 USER aws

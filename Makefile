@@ -1,7 +1,6 @@
 GO    := GO15VENDOREXPERIMENT=1 go
-GOLANGCILINT := golangci-lint
 PROMU := $(GOPATH)/bin/promu
-pkgs   = $(shell $(GO) list ./... | grep -v /vendor/)
+pkgs   = $(shell $(GO) list ./...)
 
 PREFIX                  ?= $(shell pwd)
 BIN_DIR                 ?= $(shell pwd)
@@ -9,7 +8,7 @@ DOCKER_REPO             ?= fxinnovation
 DOCKER_IMAGE_NAME       ?= alertmanager-webhook-servicenow
 DOCKER_IMAGE_TAG        ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 
-all: lint vet format build test
+all: format build test
 
 test: build ## running test after build
 	@echo ">> running tests"
@@ -27,15 +26,11 @@ vet: ## vet code
 	@echo ">> vetting code"
 	@$(GO) vet $(pkgs)
 
-dependencies: ## download the dependencies
-	rm -rf Gopkg.lock vendor/
-	dep ensure
-
-build: promu ## build code with promu
+build: ## build code with promu
 	@echo ">> building binaries"
 	@$(PROMU) build --prefix $(PREFIX)
 
-tarball: promu ## creates a release tarball
+tarball: ## creates a release tarball
 	@echo ">> building release tarball"
 	@$(PROMU) tarball --prefix $(PREFIX) $(BIN_DIR)
 
@@ -47,11 +42,6 @@ dockerlint: ## lints dockerfile
 	@echo ">> linting Dockerfile"
 	@docker run --rm -i hadolint/hadolint < Dockerfile
 
-promu: ## gets promu for building
-	@GOOS=$(shell uname -s | tr A-Z a-z) \
-		GOARCH=$(subst x86_64,amd64,$(patsubst i%86,386,$(shell uname -m))) \
-		$(GO) get -u github.com/prometheus/promu
-
 lint: golint ## lint code
 	@echo ">> linting code"
 	@! golint $(pkgs) | grep '^'
@@ -59,7 +49,12 @@ lint: golint ## lint code
 golint: ## gets golint for building
 	@go get -u golang.org/x/lint/golint
 
-.PHONY: all style format dependencies build test vet tarball promu
+getpromu:
+	@GOOS=$(shell uname -s | tr A-Z a-z) \
+		GOARCH=$(subst x86_64,amd64,$(patsubst i%86,386,$(shell uname -m))) \
+		$(GO) get github.com/prometheus/promu
+
+.PHONY: all style format build test vet tarball getpromu
 
 VERSION?=$(shell cat VERSION)
 TAGEXISTS=$(shell git tag --list | egrep -q "^$(VERSION)$$" && echo 1 || echo 0)
