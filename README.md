@@ -250,6 +250,20 @@ Example with environment variables:
 docker run -p 9877:9877 -e SERVICENOW_USERNAME="snow_user" -e SERVICENOW_PASSWORD="snow_password" fxinnovation/alertmanager-webhook-servicenow:master
 ```
 
+## Exposed metrics
+
+The webhook is instrumented to expose internal health metrics on `/metrics`.
+
+Metric | Description
+------ | -----------
+webhook_requests_total | Total number of HTTP requests on `/webhook`.
+webhook_last_request_time_seconds | Unix/epoch time of the last HTTP request on `/webhook`.
+webhook_incident_validation_errors_total | Total number of incident validation errors.
+webhook_incident_template_errors_total | Total number of incident template errors.
+servicenow_requests_total | Total number of HTTP requests to ServiceNow instance.
+servicenow_last_request_time_seconds | Unix/epoch time of the last HTTP request to ServiceNow instance.
+servicenow_errors_total | Total number of ServiceNow errors.
+
 ## Contributing
 
 Refer to
