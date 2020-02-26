@@ -45,7 +45,7 @@ var (
 	webhookLastRequest = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "webhook_last_request_time_seconds",
-			Help: "Number of seconds since 1970 of the last HTTP request on /webhook.",
+			Help: "Unix/epoch time of the last HTTP request on /webhook.",
 		},
 	)
 
@@ -74,7 +74,7 @@ var (
 	serviceNowLastRequest = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "servicenow_last_request_time_seconds",
-			Help: "Number of seconds since 1970 of the last HTTP request to ServiceNow instance.",
+			Help: "Unix/epoch time of the last HTTP request to ServiceNow instance.",
 		},
 	)
 
